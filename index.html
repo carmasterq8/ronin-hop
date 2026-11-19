@@ -124,6 +124,13 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 .contest .link{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--accent);text-decoration:underline;cursor:pointer}
 #menu.has-contest .note{display:none}
 #menu.has-contest .go{position:sticky;bottom:0;flex:none}
+#menu.has-contest{max-height:calc(100% - 104px - env(safe-area-inset-bottom));padding:18px 18px 16px;gap:10px}
+#menu.has-contest h1{font-size:clamp(30px,11vw,52px);white-space:nowrap}
+#menu.has-contest>p{font-size:14px;line-height:1.4}
+#menu.has-contest .contest{padding:10px 12px;gap:7px}
+#menu.has-contest .contest p{font-size:13.5px}
+#menu.has-contest .contest .ar{font-size:14px}
+#menu.has-contest .contest input{padding:10px 12px}
 </style>
 </head>
 <body>
