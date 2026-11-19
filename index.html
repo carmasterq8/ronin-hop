@@ -8,8 +8,8 @@
 <meta property="og:title" content="Ronin Hop">
 <meta property="og:description" content="Hold to jump. Hop the Ronin across the towers - how far can you get?">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://carmasterq8.github.io/ronin-hop/">
-<meta property="og:image" content="https://carmasterq8.github.io/ronin-hop/og.jpg">
+<meta property="og:url" content="https://play.muriegarage.com/">
+<meta property="og:image" content="https://play.muriegarage.com/og.jpg">
 <meta name="theme-color" content="#16181D">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1161,7 +1161,7 @@ function frame(ts){
 
 /* ---------- contest (hosted site only) ---------- */
 const CONTEST = (() => {
-  const API = location.hostname === 'carmasterq8.github.io' ? 'https://ronin-hop-contest-api.onrender.com' : location.hostname === 'localhost' ? 'http://127.0.0.1:8811' : '';
+  const API = ['play.muriegarage.com', 'carmasterq8.github.io'].includes(location.hostname) ? 'https://ronin-hop-contest-api.onrender.com' : location.hostname === 'localhost' ? 'http://127.0.0.1:8811' : '';
   let me = null, open = false, tokenP = null, tokenAt = 0, busy = false;
   const get = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
   const put = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
@@ -1248,7 +1248,7 @@ const CONTEST = (() => {
 /* ---------- anonymous play counter (hosted site only) ---------- */
 const COUNT = (() => {
   const API = 'https://abacus.jasoncameron.dev/', NS = 'carmasterq8-ronin-hop';
-  const live = location.hostname === 'carmasterq8.github.io';
+  const live = ['play.muriegarage.com', 'carmasterq8.github.io'].includes(location.hostname);
   const call = (op, k) => fetch(API + op + '/' + NS + '/' + k).then(r => r.ok ? r.json() : null).then(j => j ? j.value : null).catch(() => null);
   return {
     device(){ if (!live) return; try { if (localStorage.getItem('ronin.counted')) return; } catch (e) { return; }
