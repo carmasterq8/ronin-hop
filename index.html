@@ -105,6 +105,25 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 @media (orientation:landscape) and (max-height:480px){#turn{display:grid}}
 #fail{position:absolute;inset:0;display:grid;place-content:center;padding:24px;text-align:center;background:var(--paper);color:var(--ink)}
 @media (prefers-reduced-motion:reduce){.stamp.pop2{animation:none}#banner,.bar i{transition:none}}
+
+.sheet{max-height:calc(100% - 32px - env(safe-area-inset-bottom));overflow-y:auto}
+.contest{border:2px dashed var(--ink);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:color-mix(in srgb,var(--accent) 9%,var(--paper))}
+.contest strong{font:800 12px var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.contest p{font-size:14px;max-width:none}
+.contest .ar{font-family:'Changa',var(--body);font-weight:800;font-size:15px;line-height:1.5}
+.contest input{font:600 16px var(--body);padding:11px 12px;border:2px solid var(--ink);border-radius:10px;background:var(--paper);color:var(--ink);width:100%;min-width:0;
+  -webkit-user-select:text;user-select:text}
+.contest input:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.contest #joinForm{display:flex;flex-direction:column;gap:8px}
+.contest small{font-size:12px;opacity:.75}
+.contest .err{color:#B3261E;font-weight:600}
+.contest ol{padding:0;list-style:none;display:flex;flex-direction:column;gap:3px;font-size:14px;font-variant-numeric:tabular-nums}
+.contest li{display:flex;gap:8px}
+.contest li i{font-style:normal;opacity:.6;width:1.6em}
+.contest li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.contest .link{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--accent);text-decoration:underline;cursor:pointer}
+#menu.has-contest .note{display:none}
+#menu.has-contest .go{position:sticky;bottom:0;flex:none}
 </style>
 </head>
 <body>
@@ -134,6 +153,19 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     <h1 id="menuTitle">Ronin <em>Hop</em></h1>
     <p>Hold anywhere to charge, release to hop. Land dead centre for streaks and coins. In the Bamboo Forest, tap again in mid-air to slice fruit. Every 10 hops opens the next world.</p>
     <p class="note">Four worlds: Bamboo Forest, Temple Roofs, Lantern Market and Snow Castle. Each has its own trick.</p>
+    <div class="contest" id="contest" hidden>
+      <strong>Contest · مسابقة</strong>
+      <p>Highest score by 30 November wins a full car service at Murei Garage.</p>
+      <p class="ar" dir="rtl" lang="ar">أعلى نتيجة حتى ٣٠ نوفمبر تفوز بصيانة كاملة للسيارة في كراج مرعي.</p>
+      <div id="joinForm">
+        <input id="pName" type="text" maxlength="24" autocomplete="name" placeholder="Your name · الاسم" aria-label="Your name">
+        <input id="pPhone" type="tel" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="Phone number · رقم الهاتف" aria-label="Phone number">
+        <small>Your number is only used to contact the winner. It is never shown.</small>
+      </div>
+      <p id="joined" hidden>Playing as <b id="pShow"></b> · <button type="button" class="link" id="pEdit">change</button></p>
+      <p class="err" id="pErr" role="alert" hidden></p>
+      <p id="lead" hidden></p>
+    </div>
     <button class="go" id="startBtn" type="button">Begin the journey</button>
   </section>
 
@@ -149,6 +181,12 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     </div>
     <p class="note" id="finalCities">Worlds reached: Bamboo Forest</p>
     <p class="note" id="finalAds" hidden></p>
+    <div class="contest" id="overContest" hidden>
+      <strong>Contest · مسابقة</strong>
+      <p id="ocMsg"></p>
+      <ol id="ocTop"></ol>
+      <button type="button" class="link" id="ocJoin" hidden>Enter the contest</button>
+    </div>
     <button class="go" id="againBtn" type="button">Hop again</button>
   </section>
 
@@ -973,10 +1011,11 @@ function gameOver(){
   if (owner) COUNT.read().then(([d, g]) => { $('finalAds').textContent = 'Devices: ' + (d == null ? '–' : d) + ' · Games played: ' + (g == null ? '–' : g) + (ads.length ? ' · Sponsor spots (shown/landed on): ' + ads.join(' · ') : ''); });
   $('finalCities').textContent = 'Worlds reached: ' + stamps.map(s => CITIES.find(c => c.id===s).name).join(', ');
   $('best').textContent = best;
+  CONTEST.finish(score, hops);
   app.classList.remove('playing'); $('over').hidden = false; $('againBtn').focus({ preventScroll:true });
 }
 function startGame(){
-  COUNT.game();
+  COUNT.game(); CONTEST.begin();
   initAudio(); reset(); state = 'idle';
   $('menu').hidden = true; $('over').hidden = true; app.classList.add('playing');
   blip(523.25,.18,'triangle',.18,0,0,true); blip(783.99,.24,'triangle',.18,.1,0,true);
@@ -992,7 +1031,7 @@ window.addEventListener('keydown', e => {
   e.preventDefault(); if (!e.repeat) press();
 });
 window.addEventListener('keyup', e => { if (e.code==='Space' || e.code==='ArrowUp') release(); });
-$('startBtn').addEventListener('click', startGame);
+$('startBtn').addEventListener('click', () => { if (CONTEST.ready()) startGame(); });
 $('againBtn').addEventListener('click', startGame);
 $('mute').addEventListener('click', () => {
   muted = !muted; initAudio();
@@ -1120,6 +1159,92 @@ function frame(ts){
   requestAnimationFrame(frame);
 }
 
+/* ---------- contest (hosted site only) ---------- */
+const CONTEST = (() => {
+  const API = location.hostname === 'carmasterq8.github.io' ? 'https://ronin-hop-contest-api.onrender.com' : location.hostname === 'localhost' ? 'http://127.0.0.1:8811' : '';
+  let me = null, open = false, tokenP = null, tokenAt = 0, busy = false;
+  const get = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+  const put = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const call = (path, body) => fetch(API + path, body ? { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) } : undefined)
+    .then(r => r.json().then(j => ({ ok: r.ok, j })));
+  const digits = s => String(s).replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x660).replace(/\D/g, '');
+  const wait = ms => new Promise(r => setTimeout(r, Math.max(0, ms)));
+  function list(el, top) {
+    el.textContent = '';
+    (top || []).forEach((p, i) => { const li = document.createElement('li'), n = document.createElement('i'), s = document.createElement('span'), b = document.createElement('b');
+      n.textContent = (i + 1) + '.'; s.textContent = p.name; b.textContent = p.score; li.append(n, s, b); el.appendChild(li); });
+  }
+  function showForm() {
+    $('joinForm').hidden = !!me; $('joined').hidden = !me; $('pErr').hidden = true;
+    if (me) $('pShow').textContent = me.name;
+  }
+  function lead(b) {
+    if (!b) return;
+    open = b.open;
+    $('lead').hidden = !(b.top && b.top.length);
+    if (b.top && b.top.length) $('lead').textContent = (open ? 'Leader: ' : 'Contest closed. Winner: ') + b.top[0].name + ' with ' + b.top[0].score + (b.players > 1 ? ' · ' + b.players + ' players' : '');
+    if (!open) { $('joinForm').hidden = true; $('joined').hidden = true; }
+  }
+  function newToken() { tokenAt = Date.now(); tokenP = call('/api/start', {}).then(r => r.ok ? r.j.token : null).catch(() => null); return tokenP; }
+  // Sends one score. The server refuses a run that finished faster than its hops allow, so wait that long first.
+  async function send(score, hops) {
+    let token = tokenP ? await tokenP : null;
+    if (!token) token = await newToken();
+    if (!token) throw new Error('offline');
+    tokenP = null;
+    await wait(hops * 400 + 400 - (Date.now() - tokenAt));
+    return call('/api/score', { name: me.name, phone: me.phone, score, hops, token });
+  }
+  async function upload(score, hops) {
+    const pend = get('ronin.pending');
+    if (pend && pend.score > score) { score = pend.score; hops = pend.hops; }
+    put('ronin.pending', { score, hops });
+    const r = await send(score, hops);
+    if (r.ok || r.j.error !== 'server') put('ronin.pending', null);
+    return r;
+  }
+  return {
+    init() {
+      if (!API) return;
+      me = get('ronin.player');
+      $('contest').hidden = false; $('menu').classList.add('has-contest'); showForm();
+      $('pEdit').addEventListener('click', () => { $('pName').value = me.name; $('pPhone').value = me.phone; me = null; showForm(); $('pName').focus(); });
+      $('ocJoin').addEventListener('click', () => { $('over').hidden = true; $('menu').hidden = false; state = 'menu'; $('pName').focus(); });
+      call('/api/board').then(r => { if (r.ok) { lead(r.j); if (open && me && get('ronin.pending')) { const p = get('ronin.pending'); upload(p.score, p.hops).catch(() => {}); } } }).catch(() => {});
+    },
+    // Called by the start button. Empty form = play as a guest; a half-filled or wrong form stops the start.
+    ready() {
+      if (!API || me || $('joinForm').hidden) return true;
+      const name = $('pName').value.replace(/\s+/g, ' ').trim(), phone = digits($('pPhone').value);
+      if (!name && !phone) return true;
+      const err = name.length < 2 ? 'Please enter your name. · اكتب اسمك' : (phone.length < 8 || phone.length > 15) ? 'Please enter a valid phone number. · اكتب رقم هاتف صحيح' : '';
+      if (err) { $('pErr').textContent = err; $('pErr').hidden = false; return false; }
+      me = { name: name.slice(0, 24), phone }; put('ronin.player', me); showForm(); return true;
+    },
+    begin() { if (API) newToken(); },
+    finish(score, hops) {
+      const box = $('overContest'), msg = $('ocMsg');
+      if (!API) { box.hidden = true; return; }
+      box.hidden = false; $('ocJoin').hidden = true; list($('ocTop'), []);
+      const show = b => { lead(b); list($('ocTop'), b.top); };
+      if (!me || !open) {
+        msg.textContent = open ? 'Add your name on the start screen to enter the contest.' : 'The contest is closed.';
+        $('ocJoin').hidden = !open;
+        call('/api/board').then(r => { if (r.ok) { show(r.j); if (!r.j.open) { msg.textContent = 'The contest is closed.'; $('ocJoin').hidden = true; } } }).catch(() => {});
+        return;
+      }
+      if (score <= 0 && !get('ronin.pending')) { msg.textContent = 'Score a point to get on the board.'; call('/api/board').then(r => r.ok && show(r.j)).catch(() => {}); return; }
+      if (busy) return;
+      busy = true; msg.textContent = 'Sending your score…';
+      upload(score, hops).then(r => {
+        if (r.ok) { show(r.j); msg.textContent = me.name + ', your contest best is ' + r.j.best + '. Rank ' + r.j.rank + ' of ' + r.j.players + '. Screenshot this to keep your record.'; }
+        else if (r.j.error === 'closed') { open = false; msg.textContent = 'The contest is closed.'; }
+        else msg.textContent = r.j.error === 'phone' || r.j.error === 'name' ? 'Your name or phone number was not accepted. Change it on the start screen.' : 'This score could not be recorded.';
+      }).catch(() => { msg.textContent = 'Could not reach the contest server. Your score is saved on this phone and will be sent next time you open the game.'; })
+        .then(() => { busy = false; });
+    },
+  };
+})();
 /* ---------- anonymous play counter (hosted site only) ---------- */
 const COUNT = (() => {
   const API = 'https://abacus.jasoncameron.dev/', NS = 'carmasterq8-ronin-hop';
@@ -1140,7 +1265,7 @@ function start(data){
   try { coins = parseInt(localStorage.getItem('ronin.coins')||'0',10) || 0; } catch (e) {}
   coins = Math.max(coins, (data && data.coins) || 0);
   if (data && data.muted) { muted = true; $('mute').textContent = 'Sound off'; $('mute').setAttribute('aria-pressed','true'); }
-  COUNT.device();
+  COUNT.device(); CONTEST.init();
   const go = () => { resize(); reset(); state = 'menu'; $('best').textContent = best; requestAnimationFrame(frame); };
   let ready; try { ready = Promise.all([document.fonts.load('800 40px Unbounded'), document.fonts.load('800 40px Changa', 'كراج مرعي'), loadLogos()]); } catch (e) { ready = loadLogos(); }
   Promise.race([ready.catch(() => {}), new Promise(r => setTimeout(r, 2500))]).then(go);
