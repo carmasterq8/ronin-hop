@@ -192,7 +192,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
       <strong>Contest · مسابقة</strong>
       <p id="ocMsg"></p>
       <ol id="ocTop"></ol>
-      <button type="button" class="link" id="ocJoin" hidden>Enter the contest</button>
+      <button type="button" class="link" id="ocJoin" hidden>Enter the contest · شارك في المسابقة</button>
     </div>
     <button class="go" id="againBtn" type="button">Hop again</button>
   </section>
@@ -1194,19 +1194,20 @@ const CONTEST = (() => {
   }
   function newToken() { tokenAt = Date.now(); tokenP = call('/api/start', {}).then(r => r.ok ? r.j.token : null).catch(() => null); return tokenP; }
   // Sends one score. The server refuses a run that finished faster than its hops allow, so wait that long first.
-  async function send(score, hops) {
-    let token = tokenP ? await tokenP : null;
-    if (!token) token = await newToken();
+  async function send(score, hops, own) {
+    let token, at;
+    if (own) { at = Date.now(); token = await call('/api/start', {}).then(r => r.ok ? r.j.token : null); }
+    else { token = tokenP ? await tokenP : null; if (!token) token = await newToken(); at = tokenAt; tokenP = null; }
     if (!token) throw new Error('offline');
-    tokenP = null;
-    await wait(hops * 400 + 400 - (Date.now() - tokenAt));
+    await wait(hops * 400 + 400 - (Date.now() - at));
     return call('/api/score', { name: me.name, phone: me.phone, score, hops, token });
   }
-  async function upload(score, hops) {
+  function keep(score, hops) { const p = get('ronin.pending'); if (score > 0 && (!p || score > p.score)) put('ronin.pending', { score, hops }); }
+  async function upload(score, hops, own) {
     const pend = get('ronin.pending');
     if (pend && pend.score > score) { score = pend.score; hops = pend.hops; }
     put('ronin.pending', { score, hops });
-    const r = await send(score, hops);
+    const r = await send(score, hops, own);
     if (r.ok || r.j.error !== 'server') put('ronin.pending', null);
     return r;
   }
@@ -1217,7 +1218,7 @@ const CONTEST = (() => {
       $('contest').hidden = false; $('menu').classList.add('has-contest'); showForm();
       $('pEdit').addEventListener('click', () => { $('pName').value = me.name; $('pPhone').value = me.phone; me = null; showForm(); $('pName').focus(); });
       $('ocJoin').addEventListener('click', () => { $('over').hidden = true; $('menu').hidden = false; state = 'menu'; $('pName').focus(); });
-      call('/api/board').then(r => { if (r.ok) { lead(r.j); if (open && me && get('ronin.pending')) { const p = get('ronin.pending'); upload(p.score, p.hops).catch(() => {}); } } }).catch(() => {});
+      call('/api/board').then(r => { if (r.ok) { lead(r.j); if (open && me && get('ronin.pending')) { const p = get('ronin.pending'); upload(p.score, p.hops, true).catch(() => {}); } } }).catch(() => {});
     },
     // Called by the start button. Empty form = play as a guest; a half-filled or wrong form stops the start.
     ready() {
@@ -1226,7 +1227,9 @@ const CONTEST = (() => {
       if (!name && !phone) return true;
       const err = name.length < 2 ? 'Please enter your name. · اكتب اسمك' : (phone.length < 8 || phone.length > 15) ? 'Please enter a valid phone number. · اكتب رقم هاتف صحيح' : '';
       if (err) { $('pErr').textContent = err; $('pErr').hidden = false; return false; }
-      me = { name: name.slice(0, 24), phone }; put('ronin.player', me); showForm(); return true;
+      me = { name: name.slice(0, 24), phone }; put('ronin.player', me); showForm();
+      const p = get('ronin.pending'); if (p && open) upload(p.score, p.hops, true).then(r => { if (r.ok) lead(r.j); }).catch(() => {});
+      return true;
     },
     begin() { if (API) newToken(); },
     finish(score, hops) {
@@ -1235,12 +1238,13 @@ const CONTEST = (() => {
       box.hidden = false; $('ocJoin').hidden = true; list($('ocTop'), []);
       const show = b => { lead(b); list($('ocTop'), b.top); };
       if (!me || !open) {
-        msg.textContent = open ? 'Add your name on the start screen to enter the contest.' : 'The contest is closed.';
+        if (open) keep(score, hops);
+        msg.textContent = !open ? 'The contest is closed.' : score > 0 ? 'Enter your name and this score of ' + score + ' goes on the board. · اكتب اسمك لتسجيل نتيجتك' : 'Add your name on the start screen to enter the contest.';
         $('ocJoin').hidden = !open;
         call('/api/board').then(r => { if (r.ok) { show(r.j); if (!r.j.open) { msg.textContent = 'The contest is closed.'; $('ocJoin').hidden = true; } } }).catch(() => {});
         return;
       }
-      if (score <= 0 && !get('ronin.pending')) { msg.textContent = 'Score a point to get on the board.'; call('/api/board').then(r => r.ok && show(r.j)).catch(() => {}); return; }
+      if (score <= 0 && !get('ronin.pending')) { msg.textContent = 'No points this run. Only your best score counts.'; call('/api/board').then(r => r.ok && show(r.j)).catch(() => {}); return; }
       if (busy) return;
       busy = true; msg.textContent = 'Sending your score…';
       upload(score, hops).then(r => {
