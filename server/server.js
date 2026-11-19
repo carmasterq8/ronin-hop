@@ -10,6 +10,7 @@ const ENDS_AT = new Date(process.env.CONTEST_END || '2026-11-30T23:59:59+03:00')
 const SECRET = process.env.TOKEN_SECRET || crypto.randomBytes(32).toString('hex');
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const TOP_N = 10;
+const TEST_PHONE = '96500000000';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
 
@@ -19,6 +20,7 @@ async function migrate() {
     games integer not null default 0, best_at timestamptz, created_at timestamptz not null default now(), updated_at timestamptz not null default now())`);
   await pool.query(`create table if not exists used_runs (nonce text primary key, at timestamptz not null default now())`);
   await pool.query(`create index if not exists players_rank on players (best desc, best_at asc)`);
+  await pool.query('delete from players where phone = $1', [TEST_PHONE]);   // entry used for live checks, cleared on every start
 }
 
 const sign = s => crypto.createHmac('sha256', SECRET).update(s).digest('hex').slice(0, 32);
@@ -79,15 +81,19 @@ async function submit(body) {
 }
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-async function adminPage() {
+async function adminPage(key) {
   const r = await pool.query('select name, phone, best, best_hops, games, best_at from players order by best desc, best_at asc limit 500');
-  const rows = r.rows.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.name)}</td><td>+${esc(p.phone)}</td><td><b>${p.best}</b></td><td>${p.best_hops}</td><td>${p.games}</td><td>${p.best_at ? new Date(p.best_at).toLocaleString('en-GB', { timeZone: 'Asia/Kuwait' }) : ''}</td></tr>`).join('');
+  const rows = r.rows.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.name)}</td><td>+${esc(p.phone)}</td><td><b>${p.best}</b></td><td>${p.best_hops}</td><td>${p.games}</td><td>${p.best_at ? new Date(p.best_at).toLocaleString('en-GB', { timeZone: 'Asia/Kuwait' }) : ''}</td><td><form method="post" action="/admin/remove" onsubmit="return confirm('Remove this player from the contest?')"><input type="hidden" name="key" value="${esc(key)}"><input type="hidden" name="phone" value="${esc(p.phone)}"><button>Remove</button></form></td></tr>`).join('');
   return `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Ronin Hop contest</title>
 <style>body{font:15px system-ui,sans-serif;margin:16px;color:#16181d}table{border-collapse:collapse;width:100%}td,th{padding:8px 6px;border-bottom:1px solid #ddd;text-align:left}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em}</style>
 <h1>Ronin Hop contest</h1><p>${r.rows.length} players · closes ${ENDS_AT.toLocaleString('en-GB', { timeZone: 'Asia/Kuwait' })} (Kuwait time)</p>
-<div style="overflow-x:auto"><table><tr><th>#</th><th>Name</th><th>Phone</th><th>Best</th><th>Hops</th><th>Games</th><th>Record set</th></tr>${rows}</table></div>`;
+<div style="overflow-x:auto"><table><tr><th>#</th><th>Name</th><th>Phone</th><th>Best</th><th>Hops</th><th>Games</th><th>Record set</th><th></th></tr>${rows}</table></div>`;
 }
 
+const keyOk = k => !!ADMIN_KEY && k.length === ADMIN_KEY.length && crypto.timingSafeEqual(Buffer.from(k), Buffer.from(ADMIN_KEY));
+function readRaw(req) {
+  return new Promise((res, rej) => { let b = ''; req.on('data', c => { b += c; if (b.length > 4000) { rej(new Error('big')); req.destroy(); } }); req.on('end', () => res(b)); req.on('error', rej); });
+}
 function readBody(req) {
   return new Promise((res, rej) => { let b = ''; req.on('data', c => { b += c; if (b.length > 4000) { rej(new Error('big')); req.destroy(); } });
     req.on('end', () => { try { res(b ? JSON.parse(b) : {}); } catch (e) { rej(e); } }); req.on('error', rej); });
@@ -109,8 +115,14 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/api/score') { const [c, o] = await submit(await readBody(req)); return json(c, o); }
     if (req.method === 'GET' && url.pathname === '/admin') {
       const k = url.searchParams.get('key') || '';
-      if (!ADMIN_KEY || k.length !== ADMIN_KEY.length || !crypto.timingSafeEqual(Buffer.from(k), Buffer.from(ADMIN_KEY))) return json(403, { error: 'forbidden' });
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return res.end(await adminPage());
+      if (!keyOk(k)) return json(403, { error: 'forbidden' });
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); return res.end(await adminPage(k));
+    }
+    if (req.method === 'POST' && url.pathname === '/admin/remove') {
+      const f = new URLSearchParams(await readRaw(req)), k = f.get('key') || '';
+      if (!keyOk(k)) return json(403, { error: 'forbidden' });
+      await pool.query('delete from players where phone = $1', [f.get('phone') || '']);
+      res.writeHead(303, { Location: '/admin?key=' + encodeURIComponent(k) }); return res.end();
     }
     json(404, { error: 'not found' });
   } catch (e) { console.error(req.method, url.pathname, e.message); json(500, { error: 'server' }); }
