@@ -123,6 +123,13 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 .contest li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .contest .link{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--accent);text-decoration:underline;cursor:pointer}
 #menu.has-contest .note{display:none}
+.prizes{list-style:none;padding:0;display:flex;flex-direction:column;gap:4px}
+.prizes li{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;line-height:1.25}
+.prizes b{flex:none;width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--paper);font:800 10px var(--display);display:grid;place-content:center}
+.prizes div{flex:1;min-width:0;display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 10px}
+.prizes span{flex:none!important;white-space:nowrap;overflow:visible!important}
+.prizes .ar{font-size:13.5px!important;line-height:1.25!important}
+@media (max-width:385px){.prizes li{font-size:12.5px;gap:6px}.prizes .ar{font-size:12.5px!important}.prizes div{gap:0 6px}}
 #menu.has-contest .go{position:sticky;bottom:0;flex:none}
 #menu.has-contest{max-height:calc(100% - 104px - env(safe-area-inset-bottom));padding:18px 18px 16px;gap:10px}
 #menu.has-contest h1{font-size:clamp(30px,11vw,52px);white-space:nowrap}
@@ -161,13 +168,18 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     <p>Hold anywhere to charge, release to hop. Land dead centre for streaks and coins. In the Bamboo Forest, tap again in mid-air to slice fruit. Every 10 hops opens the next world.</p>
     <p class="note">Four worlds: Bamboo Forest, Temple Roofs, Lantern Market and Snow Castle. Each has its own trick.</p>
     <div class="contest" id="contest" hidden>
-      <strong>Contest · مسابقة</strong>
-      <p>Highest score by 30 November wins a full car service at Murei Garage.</p>
-      <p class="ar" dir="rtl" lang="ar">أعلى نتيجة حتى ٣٠ نوفمبر تفوز بصيانة كاملة للسيارة في كراج مرعي.</p>
+      <strong>Murei Garage contest · مسابقة كراج مرعي</strong>
+      <p>Top 3 scores by 30 November win free:</p>
+      <p class="ar" dir="rtl" lang="ar">أعلى ٣ نتائج حتى ٣٠ نوفمبر تفوز مجاناً:</p>
+      <ul class="prizes">
+        <li><b>1</b><div><span>Full car inspection</span><span class="ar" dir="rtl" lang="ar">فحص شامل للسيارة</span></div></li>
+        <li><b>2</b><div><span>Computer diagnosis</span><span class="ar" dir="rtl" lang="ar">فحص كمبيوتر</span></div></li>
+        <li><b>3</b><div><span>Oil &amp; filter change</span><span class="ar" dir="rtl" lang="ar">تغيير الزيت والفلتر</span></div></li>
+      </ul>
       <div id="joinForm">
         <input id="pName" type="text" maxlength="24" autocomplete="name" placeholder="Your name · الاسم" aria-label="Your name">
         <input id="pPhone" type="tel" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="Phone number · رقم الهاتف" aria-label="Phone number">
-        <small>Your number is only used to contact the winner. It is never shown.</small>
+        <small>Your number is only used to contact winners. It is never shown.</small>
       </div>
       <p id="joined" hidden>Playing as <b id="pShow"></b> · <button type="button" class="link" id="pEdit">change</button></p>
       <p class="err" id="pErr" role="alert" hidden></p>
