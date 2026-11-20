@@ -123,6 +123,10 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 .contest li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .contest .link{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--accent);text-decoration:underline;cursor:pointer}
 #menu.has-contest .note{display:none}
+#rival{margin-top:5px;align-self:flex-start;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 12px var(--body);color:var(--ink);
+  background:color-mix(in srgb,var(--paper) 82%,transparent);border:1.5px solid var(--ink);border-radius:999px;padding:3px 9px}
+.sheet .ghost{align-self:stretch;font:800 12.5px var(--display);letter-spacing:.04em;padding:12px 10px;border:2px solid var(--ink);border-radius:14px;background:transparent;color:var(--ink);cursor:pointer}
+.sheet .ghost:active{transform:translateY(1px)}
 .prizes{list-style:none;padding:0;display:flex;flex-direction:column;gap:4px}
 .prizes li{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;line-height:1.25}
 .prizes b{flex:none;width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--paper);font:800 10px var(--display);display:grid;place-content:center}
@@ -146,7 +150,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
   <div id="fx"></div>
 
   <header class="hud">
-    <div class="score"><span id="score">0</span><small>Best <b id="best">0</b></small><small>Coins <b id="coins">0</b></small><span id="streak">Streak ×2</span></div>
+    <div class="score"><span id="score">0</span><small>Best <b id="best">0</b></small><small>Coins <b id="coins">0</b></small><span id="streak">Streak ×2</span><span id="rival" hidden></span></div>
     <div class="trip"><span id="city">Bamboo Forest</span><span id="next">Temple Roofs in 10 hops</span><div class="bar"><i id="prog"></i></div></div>
     <button id="mute" type="button" aria-pressed="false">Sound on</button>
   </header>
@@ -207,6 +211,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
       <button type="button" class="link" id="ocJoin" hidden>Enter the contest · شارك في المسابقة</button>
     </div>
     <button class="go" id="againBtn" type="button">Hop again</button>
+    <button class="ghost" id="shareBtn" type="button" hidden>Challenge a friend · تحدَّ صديقاً</button>
   </section>
 
   <div id="turn">Turn your phone upright to play</div>
@@ -647,7 +652,7 @@ const BUILD = {
     return { shape:'cyl', r:r*.94, h:.42, dwell:'Meditate' };
   },
 };
-const SIZES = { stump:[.36,.6], stone:[.44,.78], shrine:[.46,.74], teahouse:[.46,.72], mochi:[.4,.62], cart:[.42,.42],
+const SIZES = { mureihq:[.62,.62], stump:[.36,.6], stone:[.44,.78], shrine:[.46,.74], teahouse:[.46,.72], mochi:[.4,.62], cart:[.42,.42],
   billboard:[.52,.74], roof:[.48,.78], lantern:[.4,.56], drum:[.42,.64], tile:[.44,.66], cushion:[.44,.62],
   stall:[.5,.76], crate:[.44,.72], barrel:[.38,.58], fdrum:[.44,.64], bowl:[.46,.64],
   keep:[.5,.76], iceroof:[.62,.8], drift:[.46,.66], slantern:[.42,.56], wall:[.46,.74], spring:[.46,.62] };
@@ -754,6 +759,88 @@ const thud = () => { blip(150,.12,'sine',.25,0,70); whoosh(.08,900,300,.12); };
 
 /* ---------- world ---------- */
 function dispose(o){ o.traverse(c => { if (c.geometry) c.geometry.dispose(); }); scene.remove(o); }
+/* ---------- custom brand buildings: the whole block is designed for one sponsor ---------- */
+const BRAND_RATE = .06;                    // share of blocks that are a custom brand building; landing on one pays a bonus
+const BR = { ink:'#17191E', ink2:'#0C0D10', gold:'#C9A24B', gold2:'#E9CB7A', ivory:'#F3EEE4', steel:'#C9CDD3', glass:'#9CC4CE' };
+const brandMats = new Map();
+function brandTex(key, W, H, draw){
+  let m = brandMats.get(key); if (m) return m;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; draw(c.getContext('2d'), W, H);
+  const t = new T.CanvasTexture(c); t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  m = new T.MeshBasicMaterial({ map:t }); brandMats.set(key, m); return m;
+}
+const LATF = 'Unbounded, "Arial Black", Arial, sans-serif', ARAF = 'Changa, "Noto Kufi Arabic", "Geeza Pro", Tahoma, sans-serif';
+function fitText(x, txt, face, maxW, start, spacing){ let fs = start;
+  for (;;) { x.font = `800 ${fs}px ${face}`; if ('letterSpacing' in x) x.letterSpacing = spacing ? (fs*spacing)+'px' : '0px'; if (x.measureText(txt).width <= maxW || fs < 9) return fs; fs *= .97; } }
+function emblemDisc(x, cx, cy, d){
+  x.save(); x.beginPath(); x.arc(cx,cy,d/2,0,7); x.clip();
+  if (IMG.murei) x.drawImage(IMG.murei, cx-d/2-d*.004, cy-d/2-d*.004, d*1.008, d*1.008); else { x.fillStyle = BR.ink; x.fillRect(cx-d/2,cy-d/2,d,d); }
+  x.restore();
+  x.lineWidth = d*.022; x.strokeStyle = BR.gold2; x.beginPath(); x.arc(cx,cy,d/2+d*.012,0,7); x.stroke();
+}
+function mureiWall(x, W, H){
+  const g = x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#22252C'); g.addColorStop(.55,BR.ink); g.addColorStop(1,'#0D0E11'); x.fillStyle = g; x.fillRect(0,0,W,H);
+  x.strokeStyle = BR.gold; x.lineWidth = W*.008; const m = W*.045; x.strokeRect(m,m,W-2*m,H-2*m);
+  x.lineWidth = W*.003; x.strokeRect(m*1.5,m*1.5,W-3*m,H-3*m);
+  const d = W*.54; emblemDisc(x, W/2, H*.09+d/2, d);
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.direction = 'rtl'; x.fillStyle = BR.gold2; fitText(x, 'كراج مرعي', ARAF, W*.76, H*.17); x.fillText('كراج مرعي', W/2, H*.615);
+  x.fillStyle = BR.gold; x.fillRect(W*.2, H*.705, W*.6, H*.0035);
+  x.direction = 'ltr'; x.fillStyle = BR.ivory; let fs = fitText(x, 'MUREI GARAGE', LATF, W*.72, H*.07, .06); x.fillText('MUREI GARAGE', W/2+fs*.03, H*.768);
+  x.fillStyle = BR.gold2; fs = fitText(x, '9411 7941', LATF, W*.52, H*.06, .04); x.fillText('9411 7941', W/2+fs*.02, H*.875);
+  if ('letterSpacing' in x) x.letterSpacing = '0px';
+}
+function mureiFascia(ar){ return (x, W, H) => {
+  x.fillStyle = BR.ink2; x.fillRect(0,0,W,H); x.textAlign = 'center'; x.textBaseline = 'middle';
+  const txt = ar ? 'كراج مرعي' : 'MUREI GARAGE'; x.direction = ar ? 'rtl' : 'ltr'; x.fillStyle = BR.gold2;
+  const fs = fitText(x, txt, ar ? ARAF : LATF, W*.6, H*(ar ? .95 : .62), ar ? 0 : .08); x.fillText(txt, W/2+(ar?0:fs*.04), H*(ar ? .44 : .53));
+  const tw = x.measureText(txt).width; x.fillStyle = BR.gold; for (const s of [-1,1]) x.fillRect(W/2+s*(tw/2+W*.04)-(s<0?W*.1:0), H*.47, W*.1, H*.06);
+  if ('letterSpacing' in x) x.letterSpacing = '0px'; }; }
+function facePlane(g, face, B, along, y, w, h, m){
+  const pl = new T.Mesh(new T.PlaneGeometry(w,h), m);
+  if (face==='z') { pl.rotation.y = Math.PI; pl.position.set(along, y, -B); } else { pl.rotation.y = -Math.PI/2; pl.position.set(-B, y, along); }
+  g.add(pl); return pl;
+}
+BUILD.mureihq = function(g, w){
+  const B = w-.03, G = mat(BR.gold,true), WH = .58, wy = .05+WH/2;
+  box(g,2*w+.02,.05,2*w+.02,BR.ink2,0,.025,0);
+  box(g,2*B,WH,2*B,BR.ivory,0,wy,0);
+  for (const sx of [-1,1]) for (const sz of [-1,1]) box(g,.07,WH,.07,BR.ink,sx*B,wy,sz*B);
+  // service bay: a roller door that rolls up when the Ronin lands on the roof
+  const dw = w*1.02, dh = .46, dx = -w*.2;
+  on(g,'z',B,dx,.05+dh/2+.01,dw+.08,dh+.05,.02,BR.ink); on(g,'z',B,dx,.05+dh/2,dw,dh,.012,BR.ink2,.012);
+  on(g,'z',B,dx,.05+dh-.035,dw*.8,.02,.012,mat('#FFE9A8',true),.016);
+  const door = new T.Group(); door.position.set(dx,.05+dh,-B-.03); g.add(door);
+  box(door,dw,dh,.02,BR.steel,0,-dh/2,0,false);
+  for (let k=1;k<7;k++) box(door,dw,.008,.024,'#9AA0A8',0,-dh*k/7,0,false);
+  box(door,dw,.03,.028,BR.gold,0,-dh+.015,0,false);
+  on(g,'z',B,w*.6,.38,w*.36,.24,.02,BR.ink); on(g,'z',B,w*.6,.38,w*.29,.19,.03,mat(BR.glass,true));
+  // reception window on the other visible wall
+  on(g,'x',B,0,.36,w*1.44,.32,.02,BR.ink); on(g,'x',B,0,.36,w*1.36,.26,.03,mat(BR.glass,true));
+  for (const a of [-w*.23,w*.23]) on(g,'x',B,a,.36,.022,.26,.034,BR.ink);
+  on(g,'x',B,0,.12,w*1.44,.03,.03,BR.gold);
+  // name band all round, lettering cut to the band on both visible walls
+  const fy = .05+WH+.08;
+  box(g,2*w+.12,.16,2*w+.12,BR.ink2,0,fy,0);
+  box(g,2*w+.135,.014,2*w+.135,G,0,fy-.075,0,false); box(g,2*w+.135,.014,2*w+.135,G,0,fy+.075,0,false);
+  const fw = 2*w+.06, fh = .125;
+  facePlane(g,'z',w+.062,0,fy,fw,fh,brandTex('mfe',1024,Math.round(1024*fh/fw),mureiFascia(false)));
+  facePlane(g,'x',w+.062,0,fy,fw,fh,brandTex('mfa',1024,Math.round(1024*fh/fw),mureiFascia(true)));
+  // roof: the round emblem is the landing spot
+  box(g,2*w+.05,.03,2*w+.05,BR.ink,0,fy+.095,0);
+  const disc = put(g,new T.CircleGeometry(w*.74,48),brandTex('mroof',512,512,(x,W,H) => { x.fillStyle = BR.ink; x.fillRect(0,0,W,H); emblemDisc(x,W/2,H/2,W*.93); }),0,fy+.112,0,false);
+  disc.rotation.x = -Math.PI/2; disc.rotation.z = Math.PI*.75;
+  return { shape:'box', wx:w, wz:w, h:fy+.11, brand:'Murei Garage', door, doorT:-1 };
+};
+function brandTower(g, info){
+  const X = info.wx-.03, Z = info.wz-.03, G = mat(BR.gold,true);
+  put(g, shadeGeo(new T.BoxGeometry(2*X,PL,2*Z),PL), vmat(BR.ink), 0,PL/2,0);
+  box(g,2*X+.1,.12,2*Z+.1,BR.ink2,0,.06,0); box(g,2*X+.11,.018,2*Z+.11,G,0,.13,0,false);
+  box(g,2*X+.09,.06,2*Z+.09,BR.ink2,0,PL-.03,0); box(g,2*X+.1,.014,2*Z+.1,G,0,PL-.068,0,false);
+  for (const sx of [-1,1]) for (const sz of [-1,1]) box(g,.03,PL-.21,.03,G,sx*(X+.004),PL/2+.035,sz*(Z+.004),false);
+  for (const f of ['z','x']) { const B = f==='z' ? Z : X, W = 2*(f==='z' ? X : Z), pw = W-.07, ph = PL-.25;
+    facePlane(g,f,B+.006,0,PL/2+.035,pw,ph,brandTex('mwall'+pw.toFixed(2),Math.round(1024*pw/ph),1024,mureiWall)); }
+}
 function makeBlock(i, kind, x, z, alongX){
   const g = new T.Group(), sz = SIZES[kind];
   // every block rolls its own size class, so a tiny target can follow a big one from early on
@@ -765,20 +852,21 @@ function makeBlock(i, kind, x, z, alongX){
   // boards stay occasional: never two towers with a board in a row
   const prevBoard = blocks.length > 0 && blocks[blocks.length-1].board;
   let sp = null;
-  if (i > 0 && kind==='billboard') sp = nextSponsor();
+  if (kind==='mureihq') sp = null;
+  else if (i > 0 && kind==='billboard') sp = nextSponsor();
   else if (i > 0 && !prevBoard) { const r = Math.random(); sp = r < AD_RATE ? nextSponsor() : r < AD_RATE+FREE_RATE ? FREE[freeTurn++ % FREE.length] : null; }
-  const adKey = sp && !sp.free ? sp.label||sp.name : null;
+  const adKey = kind==='mureihq' ? 'Murei Garage (building)' : sp && !sp.free ? sp.label||sp.name : null;
   if (adKey) (runAds[adKey] = runAds[adKey] || [0,0])[0]++;
   const mg = new T.Group(); mg.position.y = PL; g.add(mg);
   const info = BUILD[kind](mg, w, alongX, kind==='billboard' ? sp : null);
   if (adKey && kind==='teahouse') info.dwell = (sp.label||sp.name)+' tea';
-  const cracked = !sp && i >= 2 && i % HOPS !== 0 && kind !== 'tile' && kind !== 'cart' && Math.random() < COLLAPSE_RATE;
-  tower(g, info, CITIES[city], sp, kind==='billboard', cracked);
+  const cracked = !sp && kind!=='mureihq' && i >= 2 && i % HOPS !== 0 && kind !== 'tile' && kind !== 'cart' && Math.random() < COLLAPSE_RATE;
+  if (info.brand) brandTower(g, info); else tower(g, info, CITIES[city], sp, kind==='billboard', cracked);
   info.h += PL;
   const dot = new T.Group(); dot.position.y = info.h+.006; dot.rotation.x = -Math.PI/2; g.add(dot);
   put(dot,new T.CircleGeometry(.12,24),mat('#FFFFFF',true),0,0,0,false);
   put(dot,new T.CircleGeometry(.05,18),mat('#2A1B2E',true),0,0,.002,false);
-  dot.visible = false;
+  dot.visible = false; if (info.brand) dot.scale.set(.001,.001,.001);     // the emblem on the roof is the target
   let coin = null;
   if (i > 0 && !info.crumble && !info.moving && Math.random() < .45) {
     coin = new T.Group(); coin.position.y = info.h+.62; g.add(coin);
@@ -786,7 +874,7 @@ function makeBlock(i, kind, x, z, alongX){
     const c2 = cyl(coin,.085,.085,.04,20,'#E0A526',0,0,0,false); c2.rotation.x = Math.PI/2;
   }
   g.position.set(x,0,z); scene.add(g);
-  return Object.assign({ board:!!sp, collapse:cracked, tiny, sponsor: adKey, coin, sink:0, i, kind, city, x, z, bx:x, bz:z, g, dot, dwellDone:false, stopped:false,
+  return Object.assign({ board:!!sp || !!info.brand, collapse:cracked, tiny, sponsor: adKey, coin, sink:0, i, kind, city, x, z, bx:x, bz:z, g, dot, dwellDone:false, stopped:false,
     ax:alongX?1:0, az:alongX?0:1, phase:rnd(0,6), spd:1.6+d*1.5, age:0, land:9, sq:1 }, info);
 }
 const half = (b, alongX) => b.shape==='cyl' ? b.r : alongX ? b.wx : b.wz;
@@ -795,6 +883,7 @@ function spawnNext(){
   const city = CITIES[Math.floor(i/HOPS)%CITIES.length], d = hard(i);
   let kind;
   if (i % HOPS === 0) kind = city.first;
+  else if (i > 3 && !cur.board && Math.random() < BRAND_RATE) kind = 'mureihq';
   else { do { kind = pick(city.kinds); } while (kind === cur.kind || (kind==='cart' && i%HOPS<2) || (kind==='billboard' && (cur.board || Math.random() < .55))); }
   let alongX = Math.random() < .5;
   if (dirBal >= 2) alongX = false; else if (dirBal <= -2) alongX = true;
@@ -848,6 +937,7 @@ function updateHud(){
   $('next').textContent = `${CITIES[(cityIdx+1)%CITIES.length].name} in ${left} hop${left===1?'':'s'}`;
   $('prog').style.width = (n/HOPS*100)+'%';
   $('streak').textContent = `Streak ×${combo}`; $('streak').classList.toggle('on', combo > 1);
+  CONTEST.hud(score);
 }
 const v3 = new T.Vector3();
 function popup(text, big, dy, delay){
@@ -1009,6 +1099,7 @@ function land(){
       popup('+1 coin', false, 24, .12); blip(1318.5,.09,'square',.05,.05); blip(1760,.16,'square',.05,.12); }
     b.g.remove(b.coin); b.coin.traverse(c => { if (c.geometry) c.geometry.dispose(); }); b.coin = null;
   }
+  if (b.brand) { score += 10; b.doorT = 0; popup(`${b.brand} +10`, true, 34, .12); sparkle(12, [BR.gold2,'#FFFFFF',BR.gold]); blip(1046.5,.18,'sine',.12,.08,0,true); blip(1568,.3,'sine',.1,.18,0,true); }
   if (b.collapse && !hinted.collapse) { hinted.collapse = true; popup('Cracked tower: it falls when you jump', false, -28, .15); }
   if (b.crumble) { b.crT = 0; popup('Loose tile, hurry!', false, -26, .1); }
   if (b.boost) { popup('Drum boost: hold shorter!', false, -26, .1); blip(110,.25,'sine',.3,0,60); }
@@ -1075,6 +1166,7 @@ function update(dt){
 
   for (const b of blocks) {
     b.age += dt; b.land += dt;
+    if (b.door && b.doorT >= 0 && b.doorT < 1) { b.doorT = Math.min(1, b.doorT+dt*1.6); const e = 1-Math.pow(1-b.doorT,3); b.door.scale.y = 1-.86*e; }
     if (b.coin) { b.coin.rotation.y += dt*3.2; b.coin.position.y = b.h+.62+Math.sin(time*3+b.phase)*.04; }
     if (b.fallT !== undefined) {
       b.fallT += dt; b.sink += dt*(.5+b.fallT*6.5); b.g.rotation.z = Math.min(.32, b.fallT*.32)*(b.ax ? -1 : 1);
@@ -1183,7 +1275,7 @@ function frame(ts){
 /* ---------- contest (hosted site only) ---------- */
 const CONTEST = (() => {
   const API = ['play.muriegarage.com', 'carmasterq8.github.io'].includes(location.hostname) ? 'https://ronin-hop-contest-api.onrender.com' : location.hostname === 'localhost' ? 'http://127.0.0.1:8811' : '';
-  let me = null, open = false, tokenP = null, tokenAt = 0, busy = false;
+  let me = null, open = false, tokenP = null, tokenAt = 0, busy = false, boardTop = [], passedN = 0, lastScore = 0;
   const get = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
   const put = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
   const call = (path, body) => fetch(API + path, body ? { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) } : undefined)
@@ -1201,7 +1293,7 @@ const CONTEST = (() => {
   }
   function lead(b) {
     if (!b) return;
-    open = b.open;
+    open = b.open; if (b.top) boardTop = b.top;
     $('lead').hidden = !(b.top && b.top.length);
     if (b.top && b.top.length) $('lead').textContent = (open ? 'Leader: ' : 'Contest closed. Winner: ') + b.top[0].name + ' with ' + b.top[0].score + (b.players > 1 ? ' · ' + b.players + ' players' : '');
     if (!open) { $('joinForm').hidden = true; $('joined').hidden = true; }
@@ -1230,6 +1322,7 @@ const CONTEST = (() => {
       if (!API) return;
       me = get('ronin.player');
       $('contest').hidden = false; $('menu').classList.add('has-contest'); showForm();
+      $('shareBtn').hidden = false; $('shareBtn').addEventListener('click', () => CONTEST.share());
       $('pEdit').addEventListener('click', () => { $('pName').value = me.name; $('pPhone').value = me.phone; me = null; showForm(); $('pName').focus(); });
       $('ocJoin').addEventListener('click', () => { $('over').hidden = true; $('menu').hidden = false; state = 'menu'; $('pName').focus(); });
       call('/api/board').then(r => { if (r.ok) { lead(r.j); if (open && me && get('ronin.pending')) { const p = get('ronin.pending'); upload(p.score, p.hops, true).catch(() => {}); } } }).catch(() => {});
@@ -1245,9 +1338,27 @@ const CONTEST = (() => {
       const p = get('ronin.pending'); if (p && open) upload(p.score, p.hops, true).then(r => { if (r.ok) lead(r.j); }).catch(() => {});
       return true;
     },
-    begin() { if (API) newToken(); },
+    begin() { if (API) newToken(); passedN = -1; },
+    // HUD line: who is next on the board and how many points away
+    hud(sc) {
+      const el = $('rival'); if (!el) return;
+      if (!API || !open || !boardTop.length || state === 'menu' || state === 'over') { el.hidden = true; return; }
+      const others = boardTop.filter(p => !(me && p.name === me.name)).sort((a, b) => a.score - b.score);
+      const next = others.find(p => p.score >= sc), passed = others.filter(p => p.score < sc);
+      if (passedN >= 0 && passed.length > passedN && sc > 0) popup('Passed ' + passed[passed.length-1].name + '!', true, 62, .25);
+      passedN = passed.length;
+      el.hidden = false;
+      el.textContent = next ? (next.score - sc + 1) + ' to pass ' + next.name : others.length ? 'Top of the board!' : '';
+      if (!el.textContent) el.hidden = true;
+    },
+    share() {
+      const n = lastScore > 0 ? lastScore : best;
+      const text = 'سجّلت ' + n + ' نقطة في لعبة Ronin Hop 🎮 هل تستطيع أن تتحداني؟\nI scored ' + n + ' in Ronin Hop. Can you beat me?\nالعب واربح مع كراج مرعي · Play and win with Murei Garage:\nhttps://play.muriegarage.com';
+      window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
+    },
     finish(score, hops) {
       const box = $('overContest'), msg = $('ocMsg');
+      lastScore = score; $('rival').hidden = true;
       if (!API) { box.hidden = true; return; }
       box.hidden = false; $('ocJoin').hidden = true; list($('ocTop'), []);
       const show = b => { lead(b); list($('ocTop'), b.top); };
