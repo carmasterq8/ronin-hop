@@ -350,7 +350,8 @@ const AD_RATE = .12;                       // share of ordinary blocks whose tow
 const COLLAPSE_RATE = .24;                 // trial: share of plain towers that are cracked and fall when you jump off
 const PL = 1.5;                            // height of the tower under every block
 let sponsorTurn = (Math.random()*SPONSORS.length)|0, runAds = {};
-const nextSponsor = () => SPONSORS[sponsorTurn++ % SPONSORS.length];
+const BOARD_SPONSORS = [];                // sponsors shown as a board on a normal tower; each current sponsor has a custom building instead
+const nextSponsor = () => BOARD_SPONSORS.length ? BOARD_SPONSORS[sponsorTurn++ % BOARD_SPONSORS.length] : FREE[freeTurn++ % FREE.length];
 const signMats = new Map();
 function signMat(sp, aspect, wrap){
   const key = (sp.id||sp.name)+'|'+aspect.toFixed(2)+(wrap?'w':''); let m = signMats.get(key);
@@ -652,7 +653,7 @@ const BUILD = {
     return { shape:'cyl', r:r*.94, h:.42, dwell:'Meditate' };
   },
 };
-const SIZES = { mureihq:[.62,.62], stump:[.36,.6], stone:[.44,.78], shrine:[.46,.74], teahouse:[.46,.72], mochi:[.4,.62], cart:[.42,.42],
+const SIZES = { motorteile:[.6,.6], swidany:[.62,.62], swidan:[.56,.56], wesam:[.6,.6], mizan:[.56,.56], muhtarifeen:[.6,.6], mubdi:[.6,.6], alihussen:[.6,.6], sunshine:[.56,.56], moonlight:[.56,.56], mureihq:[.62,.62], stump:[.36,.6], stone:[.44,.78], shrine:[.46,.74], teahouse:[.46,.72], mochi:[.4,.62], cart:[.42,.42],
   billboard:[.52,.74], roof:[.48,.78], lantern:[.4,.56], drum:[.42,.64], tile:[.44,.66], cushion:[.44,.62],
   stall:[.5,.76], crate:[.44,.72], barrel:[.38,.58], fdrum:[.44,.64], bowl:[.46,.64],
   keep:[.5,.76], iceroof:[.62,.8], drift:[.46,.66], slantern:[.42,.56], wall:[.46,.74], spring:[.46,.62] };
@@ -760,7 +761,7 @@ const thud = () => { blip(150,.12,'sine',.25,0,70); whoosh(.08,900,300,.12); };
 /* ---------- world ---------- */
 function dispose(o){ o.traverse(c => { if (c.geometry) c.geometry.dispose(); }); scene.remove(o); }
 /* ---------- custom brand buildings: the whole block is designed for one sponsor ---------- */
-const BRAND_RATE = .06;                    // share of blocks that are a custom brand building; landing on one pays a bonus
+const BRAND_RATE = .14;                    // share of blocks that are a custom brand building; landing on one pays a bonus
 const BR = { ink:'#17191E', ink2:'#0C0D10', gold:'#C9A24B', gold2:'#E9CB7A', ivory:'#F3EEE4', steel:'#C9CDD3', glass:'#9CC4CE' };
 const brandMats = new Map();
 function brandTex(key, W, H, draw){
@@ -841,27 +842,302 @@ function brandTower(g, info){
   for (const f of ['z','x']) { const B = f==='z' ? Z : X, W = 2*(f==='z' ? X : Z), pw = W-.07, ph = PL-.25;
     facePlane(g,f,B+.006,0,PL/2+.035,pw,ph,brandTex('mwall'+pw.toFixed(2),Math.round(1024*pw/ph),1024,mureiWall)); }
 }
+if (!CanvasRenderingContext2D.prototype.roundRect) CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h){ this.rect(x,y,w,h); };
+/* ---------- custom brand buildings, set 2: one bespoke block per sponsor ---------- */
+function wrapTex(key, W, H, draw){
+  let m = brandMats.get(key); if (m) return m;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; draw(c.getContext('2d'), W, H);
+  const t = new T.CanvasTexture(c); t.anisotropy = renderer.capabilities.getMaxAnisotropy(); t.wrapS = T.RepeatWrapping; t.repeat.set(2,1);
+  m = new T.MeshBasicMaterial({ map:t }); brandMats.set(key, m); return m;
+}
+const bgGrad = (x,W,H,a,b) => { const g = x.createLinearGradient(0,0,0,H); g.addColorStop(0,a); g.addColorStop(1,b); x.fillStyle = g; x.fillRect(0,0,W,H); };
+function imgFit(x, key, cx, cy, w, h){ const im = IMG[key]; if (!im) return; const k = Math.min(w/im.width, h/im.height); x.drawImage(im, cx-im.width*k/2, cy-im.height*k/2, im.width*k, im.height*k); }
+function txt(x, s, ar, col, cx, cy, maxW, size, sp){
+  x.direction = ar ? 'rtl' : 'ltr'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = col;
+  const fs = fitText(x, s, ar ? ARAF : LATF, maxW, size, sp||0); x.fillText(s, cx+(sp ? fs*sp/2 : 0), cy-(ar ? fs*.1 : 0));
+  if ('letterSpacing' in x) x.letterSpacing = '0px'; return fs;
+}
+function ringBadge(x, cx, cy, d, c1, c2, mono, ar){
+  x.beginPath(); x.arc(cx,cy,d/2,0,7); x.fillStyle = c1; x.fill();
+  x.lineWidth = d*.04; x.strokeStyle = c2; x.beginPath(); x.arc(cx,cy,d*.42,0,7); x.stroke();
+  if (mono) txt(x, mono, ar, c2, cx, cy+(ar?0:d*.02), d*.6, d*(mono.length > 1 ? .34 : .5));
+}
+function starPath(x, cx, cy, R, r, n, rot){ x.beginPath(); for (let k=0;k<n*2;k++) { const a = (rot||-Math.PI/2)+k*Math.PI/n, q = k%2 ? r : R; x.lineTo(cx+Math.cos(a)*q, cy+Math.sin(a)*q); } x.closePath(); }
+function roofDisc(g, r, y, key, draw, turn){
+  const d = put(g, new T.CircleGeometry(r,56), brandTex(key,512,512,draw), 0,y,0,false); d.rotation.x = -Math.PI/2; d.rotation.z = turn == null ? Math.PI*.75 : turn; return d;
+}
+// tower for any brand kit: box or round, in the brand's colours, with art designed to the wall
+function kitTower(g, info){
+  const k = info.kit, TR = mat(k.trim,true);
+  if (k.round) {
+    const r = k.tr, bh = PL-.3;
+    put(g, shadeGeo(new T.CylinderGeometry(r,r,PL,56),PL), vmat(k.body), 0,PL/2,0);
+    cyl(g,r+.05,r+.08,.12,56,k.dark,0,.06,0); cyl(g,r+.045,r+.045,.06,56,k.dark,0,PL-.03,0);
+    for (const y of [.135,PL-.068]) cyl(g,r+.056,r+.056,.016,56,TR,0,y,0,false);
+    const band = put(g, new T.CylinderGeometry(r+.01,r+.01,bh,72,1,true), wrapTex(k.id+'wrap', 1024, Math.round(1024/(Math.PI*r/bh)), k.wall), 0,PL/2+.03,0,false);
+    band.rotation.y = -Math.PI/4;
+    return;
+  }
+  const X = k.tw-.03, Z = k.tw-.03;
+  put(g, shadeGeo(new T.BoxGeometry(2*X,PL,2*Z),PL), vmat(k.body), 0,PL/2,0);
+  box(g,2*X+.1,.12,2*Z+.1,k.dark,0,.06,0); box(g,2*X+.11,.018,2*Z+.11,TR,0,.13,0,false);
+  box(g,2*X+.09,.06,2*Z+.09,k.dark,0,PL-.03,0); box(g,2*X+.1,.014,2*Z+.1,TR,0,PL-.068,0,false);
+  for (const sx of [-1,1]) for (const sz of [-1,1]) box(g,.03,PL-.21,.03,TR,sx*(X+.004),PL/2+.035,sz*(Z+.004),false);
+  const pw = 2*X-.07, ph = PL-.25, m = brandTex(k.id+'wall', Math.round(1024*pw/ph), 1024, k.wall);
+  for (const f of ['z','x']) facePlane(g,f,X+.006,0,PL/2+.035,pw,ph,m);
+}
+const bandText = (bg, col, s, ar) => (x, W, H) => { x.fillStyle = bg; x.fillRect(0,0,W,H); txt(x, s, ar, col, W/2, H*(ar ? .5 : .54), W*.8, H*(ar ? .95 : .6), ar ? 0 : .08); };
+function nameBand(g, w, y, h, bg, col, id, en, ar, trim){
+  box(g,2*w+.12,h+.035,2*w+.12,bg,0,y,0);
+  if (trim) for (const s of [-1,1]) box(g,2*w+.135,.014,2*w+.135,mat(trim,true),0,y+s*(h/2+.01),0,false);
+  const fw = 2*w+.06;
+  facePlane(g,'z',w+.062,0,y,fw,h,brandTex(id+'be',1024,Math.round(1024*h/fw),bandText(bg,col,en,false)));
+  facePlane(g,'x',w+.062,0,y,fw,h,brandTex(id+'ba',1024,Math.round(1024*h/fw),bandText(bg,col,ar||en,!!ar)));
+}
+
+/* MOTORTEILE: a parts carton in black and orange, with a brake disc as the landing spot */
+BUILD.motorteile = function(g, w){
+  const O = '#E8500A', K = '#141518', S = '#C9CDD3';
+  box(g,2*w-.02,.3,2*w-.02,O,0,.15,0);
+  for (const a of [-w*.45,w*.45]) { box(g,.07,.31,2*w,K,a,.15,0,false); box(g,2*w,.31,.07,K,0,.15,a,false); }
+  box(g,2*w+.04,.03,2*w+.04,K,0,.315,0);
+  cyl(g,.5,.5,.07,56,S,0,.365,0); cyl(g,.503,.503,.018,56,'#8F949C',0,.365,0,false);
+  roofDisc(g,.5,.402,'mtdisc',(x,W,H) => {
+    x.fillStyle = S; x.fillRect(0,0,W,H);
+    x.strokeStyle = '#AEB3BA'; x.lineWidth = 2; for (let r=.2;r<.5;r+=.022) { x.beginPath(); x.arc(W/2,H/2,W*r,0,7); x.stroke(); }
+    x.fillStyle = '#5A5F68'; for (let k=0;k<24;k++) { const a = k*Math.PI/12, r = W*(k%2 ? .4 : .31); x.beginPath(); x.arc(W/2+Math.cos(a)*r, H/2+Math.sin(a)*r, W*.016,0,7); x.fill(); }
+    x.beginPath(); x.arc(W/2,H/2,W*.2,0,7); x.fillStyle = K; x.fill();
+    for (let k=0;k<5;k++) { const a = k*Math.PI*.4; x.beginPath(); x.arc(W/2+Math.cos(a)*W*.125, H/2+Math.sin(a)*W*.125, W*.022,0,7); x.fillStyle = '#6A6F78'; x.fill(); }
+    x.beginPath(); x.arc(W/2,H/2,W*.075,0,7); x.fillStyle = O; x.fill();
+  }, 0);
+  const cal = new T.Group(); cal.position.set(.35,.37,.35); cal.rotation.y = Math.PI/4; g.add(cal);
+  box(cal,.3,.13,.16,O,0,0,.06); box(cal,.3,.035,.19,'#B83D05',0,.08,.05,false);
+  return { shape:'cyl', r:.5, h:.404, brand:'MOTORTEILE', kit:{ id:'mt', tw:w, body:K, dark:'#08090A', trim:O, wall(x,W,H){
+    bgGrad(x,W,H,'#1C1E23','#0B0C0E');
+    x.fillStyle = O; x.fillRect(0,H*.045,W,H*.05); x.fillRect(0,H*.9,W,H*.05);
+    x.fillStyle = '#B83D05'; x.fillRect(0,H*.095,W,H*.008); x.fillRect(0,H*.892,W,H*.008);
+    imgFit(x,'mmark',W/2,H*.27,W*.5,H*.22);
+    const pw = W*.84, ph = H*.36, px = (W-pw)/2, py = H*.44; x.fillStyle = '#FFFFFF'; x.beginPath(); x.roundRect(px,py,pw,ph,W*.04); x.fill();
+    imgFit(x,'mword',W/2,py+ph/2,pw*.84,ph*.8);
+  } } };
+};
+
+/* Swidany Motors: a glass showroom with a car on display */
+BUILD.swidany = function(g, w){
+  const N = '#0F2A4A', B = w-.04;
+  box(g,2*w+.02,.05,2*w+.02,'#F3F6FA',0,.025,0);
+  cyl(g,.46,.46,.02,40,'#C3CBD6',0,.06,0,false);
+  const car = new T.Group(); car.position.set(0,.07,0); car.rotation.y = -Math.PI*.22; car.scale.set(1.9,1.9,1.9); g.add(car);
+  box(car,.56,.1,.26,'#D7263D',0,.1,0); box(car,.3,.09,.22,'#F3F6FA',-.02,.19,0); box(car,.26,.07,.23,mat('#22303F',true),-.02,.19,0,false);
+  for (const sx of [-.17,.17]) for (const sz of [-1,1]) { const wh = cyl(car,.055,.055,.05,16,'#17191E',sx,.055,sz*.13,false); wh.rotation.x = Math.PI/2; }
+  const glass = new T.Mesh(new T.BoxGeometry(2*B,.56,2*B), new T.MeshLambertMaterial({ color:'#CFEFFA', transparent:true, opacity:.2, depthWrite:false })); glass.position.y = .33; g.add(glass);
+  for (const sx of [-1,1]) for (const sz of [-1,1]) box(g,.06,.56,.06,N,sx*B,.33,sz*B);
+  nameBand(g,w,.695,.13,N,'#FFFFFF','sw','SWIDANY MOTORS',null,'#FFFFFF');
+  box(g,2*w+.05,.03,2*w+.05,'#0A1E36',0,.785,0);
+  roofDisc(g,w*.72,.802,'swroof',(x,W,H) => { x.fillStyle = '#0A1E36'; x.fillRect(0,0,W,H); ringBadge(x,W/2,H/2,W*.92,'#FFFFFF',N,'SM'); });
+  return { shape:'box', wx:w, wz:w, h:.8, brand:'Swidany Motors', kit:{ id:'sw', tw:w, body:N, dark:'#081A30', trim:'#FFFFFF', wall(x,W,H){
+    bgGrad(x,W,H,'#16395F','#0A1E36');
+    x.strokeStyle = 'rgba(255,255,255,.9)'; x.lineWidth = W*.007; const m = W*.05; x.strokeRect(m,m,W-2*m,H-2*m);
+    ringBadge(x,W/2,H*.3,W*.5,N,'#FFFFFF','SM');
+    txt(x,'SWIDANY',false,'#FFFFFF',W/2,H*.6,W*.76,H*.1,.05);
+    x.fillStyle = '#D7263D'; x.fillRect(W*.25,H*.675,W*.5,H*.008);
+    txt(x,'MOTORS',false,'#BFD3EA',W/2,H*.75,W*.6,H*.062,.3);
+  } } };
+};
+
+/* SWIDAN: a round charcoal and gold tower crowned with its initial */
+BUILD.swidan = function(g, r){
+  const K = '#22242A', G = '#E8B04A', TR = mat(G,true);
+  cyl(g,r,r,.16,56,K,0,.08,0); cyl(g,r+.012,r+.012,.02,56,TR,0,.03,0,false); cyl(g,r+.012,r+.012,.02,56,TR,0,.13,0,false);
+  cyl(g,r*.86,r*.9,.12,56,'#16171B',0,.22,0); cyl(g,r*.865,r*.865,.016,56,TR,0,.272,0,false);
+  roofDisc(g,r*.86,.282,'sdroof',(x,W,H) => { x.fillStyle = '#16171B'; x.fillRect(0,0,W,H);
+    x.strokeStyle = G; x.lineWidth = W*.012; x.beginPath(); x.arc(W/2,H/2,W*.46,0,7); x.stroke(); x.lineWidth = W*.004; x.beginPath(); x.arc(W/2,H/2,W*.43,0,7); x.stroke();
+    txt(x,'S',false,G,W/2,H*.52,W*.6,H*.62); });
+  return { shape:'cyl', r:r*.9, h:.284, brand:'SWIDAN', kit:{ id:'sd', round:true, tr:r*.96, body:K, dark:'#0E0F12', trim:G, wall(x,W,H){
+    bgGrad(x,W,H,'#2B2E36','#121317');
+    x.strokeStyle = 'rgba(232,176,74,.16)'; x.lineWidth = 2; for (let k=0;k<40;k++) { x.beginPath(); x.moveTo(W*k/40,0); x.lineTo(W*k/40,H); x.stroke(); }
+    ringBadge(x,W/2,H*.32,H*.4,'#121317',G,'S');
+    txt(x,'SWIDAN',false,G,W/2,H*.68,W*.46,H*.13,.14);
+    x.fillStyle = G; x.fillRect(W*.34,H*.8,W*.32,H*.008);
+  } } };
+};
+
+/* Wesam Al Salam Garage: the red workshop, with a medal (wesam) on the roof */
+BUILD.wesam = function(g, w){
+  const R = '#B3261E', B = w-.03, WH = .5, wy = .05+WH/2;
+  box(g,2*w+.02,.05,2*w+.02,'#7E1712',0,.025,0);
+  box(g,2*B,WH,2*B,'#F6F1EA',0,wy,0);
+  for (const sx of [-1,1]) for (const sz of [-1,1]) box(g,.07,WH,.07,R,sx*B,wy,sz*B);
+  on(g,'z',B,0,.05+.2,w*1.3,.42,.02,R); on(g,'z',B,0,.05+.19,w*1.2,.38,.03,'#E9E4DC');
+  for (let k=1;k<6;k++) on(g,'z',B,0,.05+.38*k/6,w*1.2,.008,.034,'#BDB6AB');
+  on(g,'z',B,0,.065,w*1.2,.03,.036,R);
+  on(g,'x',B,0,.33,w*1.3,.24,.02,R); on(g,'x',B,0,.33,w*1.22,.18,.03,mat('#A9D3DE',true));
+  on(g,'x',B,0,.33,.022,.18,.034,R);
+  nameBand(g,w,.05+WH+.075,.125,R,'#FFFFFF','ws','WESAM AL SALAM','وسام السلام','#FFFFFF');
+  const ry = .05+WH+.165; box(g,2*w+.05,.03,2*w+.05,'#8E1D17',0,ry,0);
+  roofDisc(g,w*.74,ry+.017,'wsroof',(x,W,H) => { x.fillStyle = '#8E1D17'; x.fillRect(0,0,W,H);
+    x.beginPath(); x.arc(W/2,H/2,W*.46,0,7); x.fillStyle = '#FFFFFF'; x.fill();
+    x.lineWidth = W*.03; x.strokeStyle = '#F2C14E'; x.beginPath(); x.arc(W/2,H/2,W*.4,0,7); x.stroke();
+    starPath(x,W/2,H/2,W*.3,W*.125,5); x.fillStyle = R; x.fill(); starPath(x,W/2,H/2,W*.16,W*.068,5); x.fillStyle = '#F2C14E'; x.fill(); }, Math.PI);
+  return { shape:'box', wx:w, wz:w, h:ry+.018, brand:'Wesam Al Salam', kit:{ id:'ws', tw:w, body:R, dark:'#7E1712', trim:'#FFFFFF', wall(x,W,H){
+    bgGrad(x,W,H,'#C5332A','#8E1D17');
+    x.fillStyle = 'rgba(255,255,255,.95)'; for (let k=0;k<5;k++) { const y = H*(.86+k*.03); x.beginPath(); x.moveTo(0,y); x.lineTo(W/2,y-H*.05); x.lineTo(W,y); x.lineTo(W,y+H*.012); x.lineTo(W/2,y-H*.038); x.lineTo(0,y+H*.012); x.fill(); }
+    x.beginPath(); x.arc(W/2,H*.27,W*.25,0,7); x.fillStyle = '#FFFFFF'; x.fill();
+    x.lineWidth = W*.016; x.strokeStyle = '#F2C14E'; x.beginPath(); x.arc(W/2,H*.27,W*.215,0,7); x.stroke();
+    starPath(x,W/2,H*.27,W*.165,W*.068,5); x.fillStyle = '#B3261E'; x.fill();
+    txt(x,'كراج',true,'#FFFFFF',W/2,H*.515,W*.5,H*.1);
+    txt(x,'وسام السلام',true,'#FFFFFF',W/2,H*.635,W*.8,H*.12);
+    txt(x,'WESAM AL SALAM',false,'#F6D9D6',W/2,H*.75,W*.76,H*.042,.1);
+  } } };
+};
+
+/* Mizan Murei: wheel alignment, so the block is a wheel on the alignment plate */
+BUILD.mizan = function(g, r){
+  const N = '#14213D';
+  cyl(g,r+.02,r+.04,.05,56,'#C9CDD3',0,.025,0);
+  cyl(g,r,r,.3,56,'#1B1C1F',0,.2,0);
+  for (const y of [.11,.2,.29]) cyl(g,r+.006,r+.006,.022,56,'#33363C',0,y,0,false);
+  roofDisc(g,r,.352,'mzroof',(x,W,H) => { x.fillStyle = '#1B1C1F'; x.fillRect(0,0,W,H);
+    x.strokeStyle = '#2E3035'; x.lineWidth = W*.012; for (const q of [.47,.43]) { x.beginPath(); x.arc(W/2,H/2,W*q,0,7); x.stroke(); }
+    x.beginPath(); x.arc(W/2,H/2,W*.34,0,7); x.fillStyle = '#D5D8DD'; x.fill();
+    x.fillStyle = '#1B1C1F'; for (let k=0;k<5;k++) { const a = k*Math.PI*.4+.3; x.beginPath(); x.moveTo(W/2+Math.cos(a-.33)*W*.11,H/2+Math.sin(a-.33)*W*.11);
+      x.lineTo(W/2+Math.cos(a-.22)*W*.29,H/2+Math.sin(a-.22)*W*.29); x.arc(W/2,H/2,W*.29,a-.22,a+.22); x.lineTo(W/2+Math.cos(a+.33)*W*.11,H/2+Math.sin(a+.33)*W*.11); x.closePath(); x.fill(); }
+    x.beginPath(); x.arc(W/2,H/2,W*.09,0,7); x.fillStyle = N; x.fill(); x.lineWidth = W*.012; x.strokeStyle = '#FFFFFF'; x.beginPath(); x.arc(W/2,H/2,W*.055,0,7); x.stroke();
+    x.strokeStyle = '#E63946'; x.lineWidth = W*.01; x.beginPath(); x.moveTo(0,H/2); x.lineTo(W,H/2); x.moveTo(W/2,0); x.lineTo(W/2,H); x.stroke(); }, Math.PI/4);
+  return { shape:'cyl', r, h:.354, brand:'Mizan Murei', kit:{ id:'mz', round:true, tr:r*.96, body:N, dark:'#0B1326', trim:'#FFFFFF', wall(x,W,H){
+    bgGrad(x,W,H,'#1D2E54','#0B1326');
+    x.fillStyle = '#E63946'; x.fillRect(0,H*.3,W,H*.008);
+    const cx = W/2, cy = H*.3, d = H*.36; x.beginPath(); x.arc(cx,cy,d/2,0,7); x.fillStyle = '#0B1326'; x.fill();
+    x.strokeStyle = '#FFFFFF'; x.lineWidth = d*.045; x.beginPath(); x.arc(cx,cy,d*.43,0,7); x.stroke(); x.beginPath(); x.arc(cx,cy,d*.2,0,7); x.stroke();
+    x.beginPath(); x.moveTo(cx-d*.36,cy); x.lineTo(cx+d*.36,cy); x.moveTo(cx,cy-d*.36); x.lineTo(cx,cy+d*.36); x.stroke();
+    x.beginPath(); x.arc(cx,cy,d*.05,0,7); x.fillStyle = '#E63946'; x.fill();
+    txt(x,'ميزان مرعي',true,'#FFFFFF',W/2,H*.66,W*.5,H*.15);
+    txt(x,'MIZAN MUREI',false,'#B9C6E4',W/2,H*.83,W*.46,H*.055,.14);
+  } } };
+};
+
+/* Al Muhtarifeen Garage: the professionals' tool chest, with a gear on top */
+BUILD.muhtarifeen = function(g, w){
+  const B = '#1F4E9E', S = '#C9CDD3';
+  box(g,2*w,.1,2*w,B,0,.05,0); box(g,2*w+.03,.02,2*w+.03,S,0,.105,0,false);
+  cyl(g,.42,.42,.1,40,S,0,.165,0);
+  for (let k=0;k<10;k++) { const a = k*Math.PI/5, t = box(g,.15,.1,.13,S,Math.cos(a)*.46,.165,Math.sin(a)*.46); t.rotation.y = -a; }
+  roofDisc(g,.42,.217,'mhroof',(x,W,H) => { x.fillStyle = S; x.fillRect(0,0,W,H);
+    x.strokeStyle = '#AEB3BA'; x.lineWidth = W*.012; x.beginPath(); x.arc(W/2,H/2,W*.42,0,7); x.stroke();
+    x.beginPath(); x.arc(W/2,H/2,W*.3,0,7); x.fillStyle = B; x.fill();
+    x.beginPath(); x.arc(W/2,H/2,W*.11,0,7); x.fillStyle = '#12151B'; x.fill();
+    x.fillStyle = '#FFFFFF'; for (let k=0;k<6;k++) { const a = k*Math.PI/3; x.beginPath(); x.arc(W/2+Math.cos(a)*W*.21,H/2+Math.sin(a)*W*.21,W*.028,0,7); x.fill(); } }, 0);
+  return { shape:'box', wx:w, wz:w, h:.219, brand:'Al Muhtarifeen', kit:{ id:'mh', tw:w, body:B, dark:'#153A78', trim:S, wall(x,W,H){
+    bgGrad(x,W,H,'#2A5DB5','#173F84');
+    const dr = (y,h) => { x.fillStyle = 'rgba(8,24,56,.42)'; x.beginPath(); x.roundRect(W*.07,y,W*.86,h,W*.02); x.fill();
+      x.fillStyle = '#2459AE'; x.beginPath(); x.roundRect(W*.08,y+H*.006,W*.84,h-H*.012,W*.018); x.fill();
+      x.fillStyle = '#E3E6EA'; x.beginPath(); x.roundRect(W*.3,y+h*.5-H*.008,W*.4,H*.016,H*.008); x.fill(); };
+    x.fillStyle = 'rgba(8,24,56,.42)'; x.beginPath(); x.roundRect(W*.07,H*.05,W*.86,H*.5,W*.02); x.fill();
+    x.fillStyle = '#2459AE'; x.beginPath(); x.roundRect(W*.08,H*.056,W*.84,H*.488,W*.018); x.fill();
+    const cx = W/2, cy = H*.2, d = W*.36; x.fillStyle = '#FFFFFF';
+    for (let k=0;k<8;k++) { x.save(); x.translate(cx,cy); x.rotate(k*Math.PI/4); x.fillRect(-d*.09,-d*.5,d*.18,d*.2); x.restore(); }
+    x.beginPath(); x.arc(cx,cy,d*.36,0,7); x.fill(); x.beginPath(); x.arc(cx,cy,d*.15,0,7); x.fillStyle = '#2459AE'; x.fill();
+    txt(x,'كراج المحترفين',true,'#FFFFFF',W/2,H*.4,W*.76,H*.1);
+    txt(x,'5011 5755',false,'#DCE7FA',W/2,H*.497,W*.5,H*.046,.06);
+    for (let k=0;k<3;k++) dr(H*(.58+k*.125),H*.105);
+  } } };
+};
+
+/* Al Mubdi Garage: an engine block with a piston rising out of it; the spark is on the crown */
+BUILD.mubdi = function(g, w){
+  const O = '#E36414', S = '#D5D8DD';
+  box(g,2*w-.04,.22,2*w-.04,'#3A3D44',0,.11,0);
+  for (const y of [.06,.12,.18]) box(g,2*w,.022,2*w,O,0,y,0,false);
+  cyl(g,.48,.5,.08,48,'#8F949C',0,.26,0);
+  cyl(g,.43,.43,.3,48,S,0,.4,0);
+  for (const y of [.43,.47,.51]) cyl(g,.434,.434,.014,48,'#5A5F68',0,y,0,false);
+  roofDisc(g,.43,.552,'mbroof',(x,W,H) => { x.fillStyle = S; x.fillRect(0,0,W,H);
+    x.strokeStyle = '#AEB3BA'; x.lineWidth = W*.014; x.beginPath(); x.arc(W/2,H/2,W*.44,0,7); x.stroke();
+    starPath(x,W/2,H/2,W*.36,W*.11,8); x.fillStyle = O; x.fill(); x.beginPath(); x.arc(W/2,H/2,W*.06,0,7); x.fillStyle = '#FFFFFF'; x.fill(); }, 0);
+  return { shape:'cyl', r:.43, h:.554, brand:'Al Mubdi', kit:{ id:'mb', tw:w, body:O, dark:'#B34A0A', trim:'#FFFFFF', wall(x,W,H){
+    bgGrad(x,W,H,'#F27A1F','#C9520C');
+    x.save(); x.translate(W/2,H*.29); x.fillStyle = 'rgba(255,255,255,.1)'; for (let k=0;k<12;k++) { x.rotate(Math.PI/6); x.beginPath(); x.moveTo(0,0); x.lineTo(-W*.08,-H); x.lineTo(W*.08,-H); x.fill(); } x.restore();
+    starPath(x,W/2,H*.29,W*.3,W*.09,8); x.fillStyle = '#FFFFFF'; x.fill();
+    x.beginPath(); x.arc(W/2,H*.29,W*.05,0,7); x.fillStyle = O; x.fill();
+    txt(x,'كراج المبدع',true,'#FFFFFF',W/2,H*.64,W*.8,H*.13);
+    x.fillStyle = '#FFFFFF'; x.fillRect(W*.25,H*.745,W*.5,H*.007);
+    txt(x,'AL MUBDI GARAGE',false,'#FFE9D6',W/2,H*.82,W*.76,H*.045,.1);
+  } } };
+};
+
+/* Ali Hussen: a speaker stack with a turntable on top; you land on the record */
+BUILD.alihussen = function(g, w){
+  const K = '#17171B', G = '#E8B04A';
+  box(g,2*w-.02,.14,2*w-.02,K,0,.07,0); box(g,2*w,.016,2*w,mat(G,true),0,.03,0,false); box(g,2*w,.016,2*w,mat(G,true),0,.125,0,false);
+  cyl(g,.51,.51,.03,56,'#C9CDD3',0,.155,0);
+  roofDisc(g,.49,.172,'ahroof',(x,W,H) => { x.fillStyle = '#C9CDD3'; x.fillRect(0,0,W,H);
+    x.beginPath(); x.arc(W/2,H/2,W*.49,0,7); x.fillStyle = '#0B0B0D'; x.fill();
+    x.strokeStyle = '#26262B'; x.lineWidth = 1.5; for (let r=.19;r<.48;r+=.012) { x.beginPath(); x.arc(W/2,H/2,W*r,0,7); x.stroke(); }
+    x.strokeStyle = 'rgba(255,255,255,.12)'; x.lineWidth = W*.03; x.beginPath(); x.arc(W/2,H/2,W*.34,-.5,.25); x.stroke(); x.beginPath(); x.arc(W/2,H/2,W*.34,2.64,3.4); x.stroke();
+    x.beginPath(); x.arc(W/2,H/2,W*.165,0,7); x.fillStyle = G; x.fill();
+    txt(x,'AH',false,'#17171B',W/2,H*.51,W*.22,H*.14); x.beginPath(); x.arc(W/2,H*.5,W*.012,0,7); x.fillStyle = '#17171B'; x.fill(); }, Math.PI*.75);
+  cyl(g,.05,.05,.07,20,G,w-.12,.18,w-.12); const arm = box(g,.5,.022,.03,G,w-.3,.21,w-.2,false); arm.rotation.y = -.35;
+  return { shape:'box', wx:w, wz:w, h:.174, brand:'Ali Hussen', kit:{ id:'ah', tw:w, body:K, dark:'#08080A', trim:G, wall(x,W,H){
+    bgGrad(x,W,H,'#202025','#0E0E11');
+    x.fillStyle = 'rgba(255,255,255,.035)'; for (let yy=0;yy<H;yy+=H*.014) for (let xx=(Math.round(yy/(H*.014))%2)*W*.009;xx<W;xx+=W*.018) x.fillRect(xx,yy,W*.006,H*.005);
+    x.strokeStyle = G; x.lineWidth = W*.006; x.beginPath(); x.roundRect(W*.12,H*.055,W*.76,H*.095,W*.015); x.stroke();
+    txt(x,'ALI HUSSEN',false,G,W/2,H*.105,W*.64,H*.05,.14);
+    const cone = (cy,d) => { const gr = x.createRadialGradient(W/2,cy,d*.06,W/2,cy,d/2); gr.addColorStop(0,'#3A3A42'); gr.addColorStop(.7,'#141417'); gr.addColorStop(1,'#050506');
+      x.beginPath(); x.arc(W/2,cy,d/2,0,7); x.fillStyle = gr; x.fill(); x.lineWidth = d*.045; x.strokeStyle = G; x.stroke();
+      x.lineWidth = d*.012; x.strokeStyle = 'rgba(232,176,74,.45)'; x.beginPath(); x.arc(W/2,cy,d*.36,0,7); x.stroke();
+      x.beginPath(); x.arc(W/2,cy,d*.13,0,7); x.fillStyle = G; x.fill(); };
+    cone(H*.3,W*.3); cone(H*.66,W*.68);
+  } } };
+};
+
+/* Sunshine: a sun with rays as the block, logo on a warm tower */
+BUILD.sunshine = function(g, r){
+  cyl(g,.5,.5,.16,56,'#FFC93C',0,.08,0);
+  for (let k=0;k<12;k++) { const a = k*Math.PI/6, c = put(g,new T.ConeGeometry(.085,.2,14),'#FF8C1A',Math.cos(a)*.6,.08,Math.sin(a)*.6); c.rotation.z = -Math.PI/2; c.rotation.y = -a; }
+  roofDisc(g,.5,.162,'snroof',(x,W,H) => { const gr = x.createRadialGradient(W/2,H/2,W*.05,W/2,H/2,W/2); gr.addColorStop(0,'#FFF3B0'); gr.addColorStop(.55,'#FFD43B'); gr.addColorStop(1,'#FFA41B'); x.fillStyle = gr; x.fillRect(0,0,W,H);
+    x.strokeStyle = 'rgba(255,255,255,.7)'; x.lineWidth = W*.014; x.beginPath(); x.arc(W/2,H/2,W*.4,0,7); x.stroke(); }, 0);
+  return { shape:'cyl', r:.5, h:.164, brand:'Sunshine', kit:{ id:'sn', round:true, tr:r*.96, body:'#F9B826', dark:'#E08A00', trim:'#FFFFFF', wall(x,W,H){
+    bgGrad(x,W,H,'#FFE27A','#FF9E2C');
+    x.save(); x.translate(W/2,H*.44); x.fillStyle = 'rgba(255,255,255,.2)'; for (let k=0;k<14;k++) { x.rotate(Math.PI/7); x.beginPath(); x.moveTo(0,0); x.lineTo(-W*.035,-H); x.lineTo(W*.035,-H); x.fill(); } x.restore();
+    imgFit(x,'sunFun',W/2,H*.48,W*.5,H*.82);
+  } } };
+};
+
+/* Moonlight: a moon as the block, logo on a night-sky tower */
+BUILD.moonlight = function(g, r){
+  cyl(g,.5,.5,.18,56,'#D9DEEA',0,.09,0); cyl(g,.506,.506,.02,56,mat('#C9D4FF',true),0,.03,0,false);
+  roofDisc(g,.5,.182,'mnroof',(x,W,H) => { const gr = x.createRadialGradient(W*.42,H*.4,W*.05,W/2,H/2,W/2); gr.addColorStop(0,'#F4F6FB'); gr.addColorStop(1,'#BFC6D8'); x.fillStyle = gr; x.fillRect(0,0,W,H);
+    for (const [cx,cy,q] of [[.3,.33,.09],[.63,.27,.055],[.7,.6,.11],[.38,.68,.07],[.5,.47,.04],[.22,.56,.035]]) { x.beginPath(); x.arc(W*cx,H*cy,W*q,0,7); x.fillStyle = '#A9B1C6'; x.fill(); x.beginPath(); x.arc(W*(cx+.008),H*(cy+.008),W*q*.82,0,7); x.fillStyle = '#C6CDDD'; x.fill(); } }, 0);
+  for (const [a,rr,y] of [[.6,.62,.5],[2.4,.66,.7],[4.3,.6,.42]]) { const s = put(g,new T.OctahedronGeometry(.055),mat('#FFE27A',true),Math.cos(a)*rr,y,Math.sin(a)*rr,false); s.scale.y = 1.5; }
+  return { shape:'cyl', r:.5, h:.184, brand:'Moonlight', kit:{ id:'mn', round:true, tr:r*.96, body:'#2B2A6B', dark:'#1A1947', trim:'#C9D4FF', wall(x,W,H){
+    bgGrad(x,W,H,'#3A2F86','#15143C');
+    x.fillStyle = '#FFE9A8'; for (let k=0;k<46;k++) { const px = (k*197.3)%W, py = (k*331.7)%H, q = W*(.0025+(k%4)*.0012); x.beginPath(); x.arc(px,py,q,0,7); x.fill(); }
+    imgFit(x,'moonFun',W/2,H*.48,W*.5,H*.82);
+  } } };
+};
+const BRANDS = ['mureihq','motorteile','swidany','swidan','wesam','mizan','muhtarifeen','mubdi','alihussen','sunshine','moonlight'];
+let brandTurn = (Math.random()*BRANDS.length)|0;
 function makeBlock(i, kind, x, z, alongX){
   const g = new T.Group(), sz = SIZES[kind];
   // every block rolls its own size class, so a tiny target can follow a big one from early on
   const d = hard(i), fixed = kind==='cart' || kind==='iceroof' || kind==='tile' || i % HOPS === 0, r = Math.random();
   const pTiny = i < 3 || fixed ? 0 : .07+.2*d, pSmall = i < 2 ? 0 : .24+.12*d, pBig = .3-.2*d;
-  const tiny = r < pTiny;
+  const isBrand = BRANDS.includes(kind), tiny = r < pTiny && !isBrand;
   const w = tiny ? sz[0]*.78 : r < pTiny+pSmall ? lerp(sz[1],sz[0],rnd(.75,1)) : r > 1-pBig ? lerp(sz[1],sz[0],rnd(0,.2)) : lerp(sz[1],sz[0],rnd(.3,.62));
   const city = Math.floor(i/HOPS)%CITIES.length;
   // boards stay occasional: never two towers with a board in a row
   const prevBoard = blocks.length > 0 && blocks[blocks.length-1].board;
   let sp = null;
-  if (kind==='mureihq') sp = null;
+  if (isBrand) sp = null;
   else if (i > 0 && kind==='billboard') sp = nextSponsor();
-  else if (i > 0 && !prevBoard) { const r = Math.random(); sp = r < AD_RATE ? nextSponsor() : r < AD_RATE+FREE_RATE ? FREE[freeTurn++ % FREE.length] : null; }
-  const adKey = kind==='mureihq' ? 'Murei Garage (building)' : sp && !sp.free ? sp.label||sp.name : null;
+  else if (i > 0 && !prevBoard) { const r = Math.random(), ar = BOARD_SPONSORS.length ? AD_RATE : 0; sp = r < ar ? nextSponsor() : r < ar+FREE_RATE ? FREE[freeTurn++ % FREE.length] : null; }
+  const adKey = isBrand ? 'Building: '+kind : sp && !sp.free ? sp.label||sp.name : null;
   if (adKey) (runAds[adKey] = runAds[adKey] || [0,0])[0]++;
   const mg = new T.Group(); mg.position.y = PL; g.add(mg);
   const info = BUILD[kind](mg, w, alongX, kind==='billboard' ? sp : null);
   if (adKey && kind==='teahouse') info.dwell = (sp.label||sp.name)+' tea';
-  const cracked = !sp && kind!=='mureihq' && i >= 2 && i % HOPS !== 0 && kind !== 'tile' && kind !== 'cart' && Math.random() < COLLAPSE_RATE;
-  if (info.brand) brandTower(g, info); else tower(g, info, CITIES[city], sp, kind==='billboard', cracked);
+  const cracked = !sp && !isBrand && i >= 2 && i % HOPS !== 0 && kind !== 'tile' && kind !== 'cart' && Math.random() < COLLAPSE_RATE;
+  if (info.brand) (info.kit ? kitTower : brandTower)(g, info); else tower(g, info, CITIES[city], sp, kind==='billboard', cracked);
   info.h += PL;
   const dot = new T.Group(); dot.position.y = info.h+.006; dot.rotation.x = -Math.PI/2; g.add(dot);
   put(dot,new T.CircleGeometry(.12,24),mat('#FFFFFF',true),0,0,0,false);
@@ -883,7 +1159,7 @@ function spawnNext(){
   const city = CITIES[Math.floor(i/HOPS)%CITIES.length], d = hard(i);
   let kind;
   if (i % HOPS === 0) kind = city.first;
-  else if (i > 3 && !cur.board && Math.random() < BRAND_RATE) kind = 'mureihq';
+  else if (i > 2 && !cur.board && Math.random() < BRAND_RATE) kind = BRANDS[brandTurn++ % BRANDS.length];
   else { do { kind = pick(city.kinds); } while (kind === cur.kind || (kind==='cart' && i%HOPS<2) || (kind==='billboard' && (cur.board || Math.random() < .55))); }
   let alongX = Math.random() < .5;
   if (dirBal >= 2) alongX = false; else if (dirBal <= -2) alongX = true;
