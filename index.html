@@ -65,6 +65,10 @@ body{background:var(--bg2);color:var(--ink);font-family:var(--body);font-size:16
 .pop.big{font:800 17px var(--display);color:var(--accent);letter-spacing:.01em}
 @keyframes rise{0%{opacity:0;translate:0 8px;scale:.6}16%{opacity:1;scale:1.12}30%{scale:1}72%{opacity:1}100%{opacity:0;translate:0 -52px}}
 
+.cheer{font:800 16px/1.3 var(--display);max-width:none}
+.cheer span,.tip span{display:block;font-family:'Changa',var(--body);font-weight:700}
+.tip{font-size:14px;max-width:none;background:color-mix(in srgb,var(--ink) 7%,transparent);border-radius:10px;padding:8px 11px}
+.tip span{font-size:14px}
 .share{display:flex;flex-direction:column;gap:8px}
 .share .head{font:800 15px/1.35 var(--display);color:var(--accent);max-width:none}
 .share .head span{display:block;font-family:'Changa',var(--body);font-size:16px}
@@ -231,6 +235,8 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
       <span>Coins <b id="finalCoins">+0</b></span>
       <span>Slices <b id="finalSlices">0</b></span>
     </div>
+    <p class="cheer" id="cheer" hidden></p>
+    <p class="tip" id="tip" hidden></p>
     <p class="note" id="finalCities">Worlds reached: Bamboo Forest</p>
     <p class="note" id="finalAds" hidden></p>
     <div class="share" id="share">
@@ -697,6 +703,7 @@ const SIZES = { mureihq:[.62,.62], stump:[.36,.6], stone:[.44,.78], shrine:[.46,
 /* ---------- state ---------- */
 let state='menu', time=0, last=0;
 let blocks=[], scenery=[], parts=[], cam={x:0,z:0};
+let lossCause = '', bestAtStart = 0, passedBest = false;
 let shake=0, slide=null, hinted={}, chargeT=0, jump=null, fall=null, wob=0, dwellT=0, squashT=9, yaw=-2.36, yawTo=-2.36;
 let score=0, best=0, combo=0, topStreak=0, hops=0, cityIdx=0, stamps=[], dirBal=0;
 let mixFrom=0, mixTo=0, mixT=1, bannerTimer=0, coins=0, runCoins=0;
@@ -1021,6 +1028,8 @@ function updateHud(){
   $('next').textContent = `${CITIES[(cityIdx+1)%CITIES.length].name} in ${left} hop${left===1?'':'s'}`;
   $('prog').style.width = (n/HOPS*100)+'%';
   SHARE.hud(score);
+  if (!passedBest && bestAtStart >= 10 && score > bestAtStart && state !== 'menu') { passedBest = true;
+    popup('New best!', true, 40); blip(987.77,.14,'triangle',.2,0,0,true); blip(1318.51,.3,'triangle',.2,.12,0,true); }
   $('streak').textContent = `Streak ×${combo}`; $('streak').classList.toggle('on', combo > 1);
   CONTEST.hud(score);
 }
@@ -1173,6 +1182,8 @@ function land(){
   p.x = jump.x1; p.z = jump.z1; p.y = jump.y1; pivot.rotation.set(0,0,0);
   const j = jump; jump = null;
   if (j.res==='miss' || j.res==='slip') {
+    const from = blocks[blocks.length-2];
+    lossCause = from && from.boost ? 'drum' : j.res==='slip' ? 'edge' : j.over ? 'long' : 'short';
     state = 'fall'; combo = 0; updateHud();
     const s = j.over ? 1 : -1;
     const v = j.res==='slip' ? .9*s : j.over ? 1.7 : 0;
@@ -1230,11 +1241,13 @@ function gameOver(){
   $('best').textContent = best;
   CONTEST.finish(score, hops);
   SHARE.finish(score, isBest, stamps.length);
+  cheer(isBest);
   app.classList.remove('playing'); $('over').hidden = false; $('againBtn').focus({ preventScroll:true });
 }
 function startGame(){
   COUNT.game(); CONTEST.begin();
   initAudio(); reset(); state = 'idle'; musicStart(); SHARE.begin();
+  lossCause = ''; bestAtStart = best; passedBest = false;
   $('menu').hidden = true; $('over').hidden = true; app.classList.add('playing');
   blip(523.25,.18,'triangle',.18,0,0,true); blip(783.99,.24,'triangle',.18,.1,0,true);
 }
@@ -1296,7 +1309,7 @@ function update(dt){
   for (const s of scenery) { s.age += dt; const q = Math.max(0, Math.min(1, s.age/.45)); s.g.scale.setScalar(Math.max(.001, reduce ? 1 : backOut(q))); }
 
   if ((state==='idle' || state==='charge') && cur.sink > 0) {
-    chargeStop(); state = 'fall'; combo = 0; fall = { t:0, vy:0, vx:0, vz:0, alongX:true, s:1, rot:0, gt:0 };
+    lossCause = 'tile'; chargeStop(); state = 'fall'; combo = 0; fall = { t:0, vy:0, vx:0, vz:0, alongX:true, s:1, rot:0, gt:0 };
     blip(240,.5,'sawtooth',.09,0,55); whoosh(.3,1200,200,.14); updateHud();
   }
   let sy = 1, sxz = 1;
@@ -1323,7 +1336,7 @@ function update(dt){
     p.x += slide.vx*dt; p.z += slide.vz*dt; const k = Math.exp(-dt*3.4); slide.vx *= k; slide.vz *= k; p.y = cur.top;
     const sp = Math.hypot(slide.vx, slide.vz);
     if (!inBlock(cur,p.x,p.z).hit) {
-      state = 'fall'; combo = 0; fall = { t:0, vy:0, vx:slide.vx/(sp||1)*.9, vz:slide.vz/(sp||1)*.9, alongX:Math.abs(slide.vx)>Math.abs(slide.vz), s:1, rot:0, gt:0 };
+      lossCause = 'ice'; state = 'fall'; combo = 0; fall = { t:0, vy:0, vx:slide.vx/(sp||1)*.9, vz:slide.vz/(sp||1)*.9, alongX:Math.abs(slide.vx)>Math.abs(slide.vz), s:1, rot:0, gt:0 };
       blip(240,.5,'sawtooth',.09,0,55); updateHud();
     } else if (sp < .1) state = 'idle';
   } else if (state==='idle') {
@@ -1489,6 +1502,41 @@ const CONTEST = (() => {
     },
   };
 })();
+/* ---------- try again: one honest, friendly line about this run plus a tip on why it ended. Never blocks, never nags. ---------- */
+const TIPS = {
+  long:  ['Tip: that jump was too long. Let go a little earlier.', 'نصيحة: قفزتك طويلة، اترك الضغط أبكر شوي'],
+  short: ['Tip: a little short. Hold a moment longer.', 'نصيحة: قفزتك قصيرة، اضغط لحظة أطول'],
+  edge:  ['So close: you clipped the edge. Aim for the dot in the middle.', 'قريبة جداً! صوّب على النقطة اللي بالنص'],
+  drum:  ['Drum blocks throw you further. Hold shorter on them.', 'الطبل يرميك أبعد، اضغط أقصر عليه'],
+  ice:   ['Ice makes you slide. Land short of the centre.', 'الثلج يزحلقك، انزل قبل النص'],
+  tile:  ['Loose tiles sink. Jump off them quickly.', 'البلاطة المهزوزة تطيح، اقفز منها بسرعة'],
+};
+const CHEERS = [
+  ['Every ronin falls. The great ones get up.', 'كل ساموراي يطيح، والأبطال يقومون'],
+  ['Warm-up done. Now the real run.', 'خلصنا الإحماء، الحين الجولة الحقيقية'],
+  ['Your hands are learning. One more.', 'إيدك قاعدة تتعلم، جولة ثانية'],
+  ['Nice hops. The next run is the one.', 'قفزات حلوة، الجولة الجاية هي'],
+];
+function cheer(isBest){
+  const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+  const day = new Date().toDateString(); let today = null;
+  try { today = JSON.parse(ls('ronin.today') || 'null'); } catch (e) {}
+  if (!today || today.d !== day) today = { d: day, s: [] };
+  today.s.push(score); today.s = today.s.slice(-40); ls('ronin.today', JSON.stringify(today));
+  const runs = today.s, avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const left = HOPS - (blocks.length >= 2 ? blocks[blocks.length-2].i % HOPS : 0), nextW = CITIES[(cityIdx+1) % CITIES.length].name;
+  const gap = bestAtStart - score;
+  let line = null;
+  if (isBest && score > 0) line = ['A new record. You can go higher.', 'رقم جديد! تقدر توصل أعلى'];
+  else if (bestAtStart > 0 && gap >= 0 && gap <= Math.max(5, Math.round(bestAtStart * .15))) line = gap === 0 ? ['You matched your best. One hop more next time!', 'عادلت رقمك! قفزة زيادة المرة الجاية'] : [`Only ${gap} away from your best!`, `باقي لك ${gap} وتكسر رقمك!`];
+  else if (left <= 3 && score > 0) line = [`Just ${left} hop${left === 1 ? '' : 's'} from ${nextW}!`, left === 1 ? 'قفزة وحدة وتوصل للعالم الجديد!' : `باقي ${left} قفزات وتوصل للعالم الجديد!`];
+  else if (runs.length >= 4) { const h = Math.floor(runs.length / 2), a = Math.round(avg(runs.slice(0, h))), b = Math.round(avg(runs.slice(h)));
+    if (b > a * 1.15 && b - a >= 3) line = [`You're getting better: your recent runs average ${b}, up from ${a}.`, `قاعد تتحسن! معدلك صار ${b} بعد ما كان ${a}`]; }
+  if (!line) line = CHEERS[(runs.length - 1) % CHEERS.length];
+  const put = (el, pair) => { el.textContent = pair[0]; const sp = document.createElement('span'); sp.dir = 'rtl'; sp.lang = 'ar'; sp.textContent = pair[1]; el.appendChild(sp); el.hidden = false; };
+  put($('cheer'), line);
+  const tip = TIPS[lossCause]; if (tip && !isBest) put($('tip'), tip); else $('tip').hidden = true;
+}
 /* ---------- share & challenge: share sheet, WhatsApp, challenge links, score card picture, golden-hat reward ---------- */
 const SHARE = (() => {
   const SITE = 'https://play.muriegarage.com/';
@@ -1607,7 +1655,9 @@ const SHARE = (() => {
       if (ar) { const sp2 = document.createElement('span'); sp2.dir = 'rtl'; sp2.lang = 'ar'; sp2.textContent = ar; head.appendChild(sp2); }
       $('share').classList.toggle('hot', !!en && !(vs && score <= vs.score));
       $('shareBtn').textContent = vs && score > vs.score ? 'Send it back · ردّ التحدي' : 'Challenge friends · تحدّ أصدقاءك';
-      $('nickRow').hidden = !!myName(); $('share').hidden = score <= 0; note(ls('ronin.gold') === '1' ? '' : 'Share once to unlock the golden hat · شارك مرة لتحصل على القبعة الذهبية');
+      const hot = $('share').classList.contains('hot');          // on an ordinary run keep the sheet short so "Hop again" stays in reach
+      $('nickRow').hidden = !!myName() || !hot; $('share').hidden = score <= 0;
+      note(ls('ronin.gold') === '1' || !hot ? '' : 'Share once to unlock the golden hat · شارك مرة لتحصل على القبعة الذهبية');
       refreshLinks();
       if (cardUrl) URL.revokeObjectURL(cardUrl);
       cardP = card().then(b => { if (b) { cardUrl = URL.createObjectURL(b); $('saveBtn').href = cardUrl; $('saveBtn').download = `ronin-hop-${score}.png`; } return b; }).catch(() => null);
