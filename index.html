@@ -65,6 +65,33 @@ body{background:var(--bg2);color:var(--ink);font-family:var(--body);font-size:16
 .pop.big{font:800 17px var(--display);color:var(--accent);letter-spacing:.01em}
 @keyframes rise{0%{opacity:0;translate:0 8px;scale:.6}16%{opacity:1;scale:1.12}30%{scale:1}72%{opacity:1}100%{opacity:0;translate:0 -52px}}
 
+.share{display:flex;flex-direction:column;gap:8px}
+.share .head{font:800 15px/1.35 var(--display);color:var(--accent);max-width:none}
+.share .head span{display:block;font-family:'Changa',var(--body);font-size:16px}
+.share .nick{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600}
+.share .nick input{font:600 16px var(--body);padding:10px 12px;border:2px solid var(--ink);border-radius:10px;background:var(--paper);color:var(--ink);width:100%}
+.share .sbtn{align-self:stretch;font:800 14px var(--display);letter-spacing:.04em;color:var(--ink);background:var(--paper);border:2px solid var(--ink);border-radius:14px;padding:13px 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink)}
+.share.hot .sbtn{background:var(--accent);color:var(--paper);padding:15px 18px;box-shadow:0 4px 0 var(--ink);animation:nudge 1.6s ease-in-out .6s 2}
+@keyframes nudge{0%,100%{scale:1}50%{scale:1.035}}
+.share .row{display:flex;gap:8px}
+.share .row>*{flex:1;min-height:44px;display:grid;place-content:center;font:700 13px var(--body);color:var(--ink);background:none;border:2px solid color-mix(in srgb,var(--ink) 35%,transparent);border-radius:12px;text-decoration:none;cursor:pointer;padding:0 8px;text-align:center}
+.share .row .wa{border-color:#1FA855;color:#12753B}
+.duel{border:2px solid var(--ink);border-radius:14px;padding:11px 14px;background:color-mix(in srgb,var(--sun,#FFB703) 22%,var(--paper));display:flex;flex-direction:column;gap:4px}
+.duel strong{font:800 12px var(--display);letter-spacing:.14em;text-transform:uppercase}
+.duel p{font-size:15px;font-weight:700;max-width:none}
+.duel .ar{font-family:'Changa',var(--body)}
+#vs{display:none;font:700 12px var(--body);background:color-mix(in srgb,var(--paper) 75%,transparent);border-radius:999px;padding:3px 9px;margin-top:4px;white-space:nowrap}
+#vs.on{display:inline-block}#vs.won{background:var(--accent);color:var(--paper)}
+@media (prefers-reduced-motion: reduce){.share.hot .sbtn{animation:none}}
+#hint{position:absolute;left:50%;top:22%;transform:translate(-50%,-8px);opacity:0;pointer-events:none;max-width:88vw;
+  background:var(--ink);color:var(--paper);font:700 15px/1.25 var(--body);padding:9px 16px 10px;border-radius:12px;text-align:center;
+  transition:opacity .25s,transform .25s;white-space:nowrap}
+#hint.show{opacity:1;transform:translate(-50%,0)}
+#credit{position:absolute;left:50%;bottom:calc(112px + env(safe-area-inset-bottom));transform:translateX(-50%);opacity:0;pointer-events:none;
+  font:600 12px var(--body);color:var(--ink);background:color-mix(in srgb,var(--paper) 82%,transparent);border-radius:999px;padding:5px 12px;
+  transition:opacity .3s;white-space:nowrap}
+#credit.show{opacity:.92}
+@media (prefers-reduced-motion: reduce){#hint,#credit{transition:none}}
 #banner{position:absolute;left:50%;top:22%;transform:translate(-50%,-12px);opacity:0;pointer-events:none;
   background:var(--ink);color:var(--paper);padding:10px 22px 12px;border-radius:14px;text-align:center;
   transition:opacity .35s,transform .35s;white-space:nowrap}
@@ -150,11 +177,12 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
   <div id="fx"></div>
 
   <header class="hud">
-    <div class="score"><span id="score">0</span><small>Best <b id="best">0</b></small><small>Coins <b id="coins">0</b></small><span id="streak">Streak ×2</span><span id="rival" hidden></span></div>
+    <div class="score"><span id="score">0</span><small>Best <b id="best">0</b></small><small>Coins <b id="coins">0</b></small><span id="streak">Streak ×2</span><span id="rival" hidden></span><span id="vs"></span></div>
     <div class="trip"><span id="city">Bamboo Forest</span><span id="next">Temple Roofs in 10 hops</span><div class="bar"><i id="prog"></i></div></div>
     <button id="mute" type="button" aria-pressed="false">Sound on</button>
   </header>
 
+  <div id="hint" aria-live="polite"></div><div id="credit" aria-live="polite"></div>
   <div id="banner" aria-live="polite"><small id="bannerTop">Next world</small><strong id="bannerCity">Temple Roofs</strong></div>
 
   <footer class="passport">
@@ -171,6 +199,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     <h1 id="menuTitle">Ronin <em>Hop</em></h1>
     <p>Hold anywhere to charge, release to hop. Land dead centre for streaks and coins. In the Bamboo Forest, tap again in mid-air to slice fruit. Every 10 hops opens the next world.</p>
     <p class="note">Four worlds: Bamboo Forest, Temple Roofs, Lantern Market and Snow Castle. Each has its own trick.</p>
+    <div class="duel" id="duel" hidden><strong>Challenge · تحدي</strong><p id="duelEn"></p><p class="ar" dir="rtl" lang="ar" id="duelAr"></p></div>
     <div class="contest" id="contest" hidden>
       <strong>Murei Garage contest · مسابقة كراج مرعي</strong>
       <p>Top 3 scores by 30 November win free:</p>
@@ -204,14 +233,20 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     </div>
     <p class="note" id="finalCities">Worlds reached: Bamboo Forest</p>
     <p class="note" id="finalAds" hidden></p>
+    <div class="share" id="share">
+      <p class="head" id="shareHead" hidden></p>
+      <label class="nick" id="nickRow"><span>Your name on the challenge · اسمك في التحدي</span><input id="nick" type="text" maxlength="18" autocomplete="nickname" placeholder="Name · الاسم"></label>
+      <button type="button" class="sbtn" id="shareBtn">Challenge friends · تحدّ أصدقاءك</button>
+      <div class="row"><a class="wa" id="waBtn" href="#" target="_blank" rel="noopener">WhatsApp</a><button type="button" id="copyBtn">Copy link · نسخ</button><a id="saveBtn" href="#" download="ronin-hop.png">Picture · صورة</a></div>
+      <p class="note" id="shareNote" hidden></p>
+    </div>
+    <button class="go" id="againBtn" type="button">Hop again</button>
     <div class="contest" id="overContest" hidden>
       <strong>Contest · مسابقة</strong>
       <p id="ocMsg"></p>
       <ol id="ocTop"></ol>
       <button type="button" class="link" id="ocJoin" hidden>Enter the contest · شارك في المسابقة</button>
     </div>
-    <button class="go" id="againBtn" type="button">Hop again</button>
-    <button class="ghost" id="shareBtn" type="button" hidden>Challenge a friend · تحدَّ صديقاً</button>
   </section>
 
   <div id="turn">Turn your phone upright to play</div>
@@ -232,6 +267,8 @@ if (!renderer) { $('fail').hidden = false; $('menu').hidden = true; return; }
 
 /* ---------- constants ---------- */
 const HOPS = 10, RATE = 3.5, MAXC = 2.2, PERFECT = 0.13, EDGE = 0.12;
+const CONTEST_END = Date.parse('2026-11-30T23:59:59+03:00');
+const comboCap = () => Date.now() > CONTEST_END ? 5 : Infinity;
 const hard = i => Math.min(1, Math.max(0, (i-2)/14));
 const CITIES = [
   { id:'bamboo', pl:'#8FB389', pd:'#6F9A6C', name:'Bamboo Forest', bg1:'#EEF6E2', bg2:'#A9CFA0', shadow:'#2F5A3C', ink:'#1F3A2B', accent:'#C8402F',
@@ -434,7 +471,7 @@ function shadeGeo(geo, h){            // walls darken toward the ground, which g
 }
 function tower(g, info, c, sp, big, cracked){
   const col = cracked ? '#B9AE9D' : c.pl, dk = cracked ? '#8E8475' : c.pd, FR = '#232329';
-  const bh = big ? 1.16 : .84, by = PL-.2-bh/2;
+  const bh = big ? 1.24 : 1.04, by = PL-.16-bh/2;     // boards fill most of the tower face so the name reads at phone size
   if (info.shape==='cyl') {
     const r = info.r*.96;
     put(g, shadeGeo(new T.CylinderGeometry(r,r,PL,48),PL), vmat(col), 0,PL/2,0);
@@ -670,7 +707,8 @@ const p = { x:0, y:0, z:0 };
 const player = new T.Group(), squash = new T.Group(), pivot = new T.Group(), yawG = new T.Group(), model = new T.Group();
 scene.add(player); player.add(squash); squash.add(pivot); pivot.add(yawG); yawG.add(model);
 pivot.position.y = .3; model.position.y = -.3; player.scale.setScalar(1.65);
-let beret, bowler;
+let beret, bowler, hatParts = [];
+function goldHat(on){ const c = on ? ['#F2C230','#C7951C','#FFE07A'] : ['#D9B56B','#B8934A','#B8934A']; hatParts.forEach((m,k) => { m.material = mat(c[k]); }); }
 (function buildPlayer(){
   const N = '#27354F', sp = (r,a,b) => new T.SphereGeometry(r,a||18,b||14);
   const ring = (R,t) => { const g = new T.TorusGeometry(R,t,10,32); g.rotateX(Math.PI/2); return g; };
@@ -687,9 +725,9 @@ let beret, bowler;
   put(model, ring(.124,.02), '#F2EDE2', 0,.13,0);
   box(model,.05,.07,.03,'#F2EDE2',.07,.11,.11,false);
   const hat = new T.Group(); model.add(hat);
-  put(hat, new T.ConeGeometry(.21,.1,36), '#D9B56B', 0,.05,0);
-  put(hat, new T.ConeGeometry(.212,.012,36), '#B8934A', 0,.004,0, false);
-  put(hat, sp(.02,10,8), '#B8934A', 0,.1,0);
+  hatParts = [put(hat, new T.ConeGeometry(.21,.1,36), '#D9B56B', 0,.05,0),
+    put(hat, new T.ConeGeometry(.212,.012,36), '#B8934A', 0,.004,0, false),
+    put(hat, sp(.02,10,8), '#B8934A', 0,.1,0)];
   hat.position.set(0,.495,-.03); hat.rotation.x = -.42;
   const k = new T.Group(); model.add(k);
   box(k,.02,.36,.02,'#1B1B22',0,.02,0); box(k,.05,.014,.03,'#F2C14E',0,-.165,0,false); box(k,.024,.1,.024,'#3A2A2A',0,-.22,0);
@@ -756,6 +794,52 @@ const swordCut = () => {
   for (let k=0;k<4;k++) blip(rnd(520,1100),.05,'sine',.05,rnd(.05,.2),rnd(240,400));
 };
 const thud = () => { blip(150,.12,'sine',.25,0,70); whoosh(.08,900,300,.12); };
+
+/* ---------- music: a soft loop per world, built from that world's notes; busier as the perfect streak grows ---------- */
+const MUS = { bus:null, lp:null, timer:null, next:0, step:0, BEAT:60/96/2 };      // 96 bpm, eighth notes
+const ARP = [0,2,4,2,5,4,2,1, 0,2,4,5,7,5,4,2];
+function musNote(f, t, dur, type, vol, to){
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t+.02); g.gain.exponentialRampToValueAtTime(.0001, t+dur);
+  o.connect(g); g.connect(to || MUS.lp); o.start(t); o.stop(t+dur+.05);
+}
+function musHat(t, vol){
+  const sN = ac.createBufferSource(), hp = ac.createBiquadFilter(), g = ac.createGain();
+  sN.buffer = noiseBuf; hp.type = 'highpass'; hp.frequency.value = 7000;
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t+.004); g.gain.exponentialRampToValueAtTime(.0001, t+.05);
+  sN.connect(hp); hp.connect(g); g.connect(MUS.bus); sN.start(t, Math.random()*.3); sN.stop(t+.06);
+}
+function musTick(){
+  if (!ac || !MUS.bus) return;
+  while (MUS.next < ac.currentTime + .25) {
+    const t = MUS.next, k = MUS.step, c = CITIES[cityIdx], n = c.notes, heat = Math.min(combo, 6);
+    MUS.lp.frequency.setTargetAtTime(900 + heat*450, t, .4);
+    if (k % 8 === 0) musNote(n[0]/4, t, MUS.BEAT*7.5, 'sine', .22);                       // bass, once a bar
+    if (k % 8 === 4) musNote(n[k % 16 === 4 ? 3 : 4]/4, t, MUS.BEAT*3.5, 'sine', .14);
+    musNote(n[ARP[k % 16]]/2, t, MUS.BEAT*1.6, c.wave, .045);                               // plucked arpeggio
+    if (heat >= 2 && k % 2 === 1) musHat(t, .05 + heat*.01);                                 // streak: hats come in
+    if (heat >= 4 && k % 4 === 2) musNote(n[ARP[(k+3) % 16]+1 > 7 ? 7 : ARP[(k+3) % 16]+1], t, MUS.BEAT*1.2, 'sine', .03);
+    MUS.next += MUS.BEAT; MUS.step++;
+  }
+}
+function musicStart(){
+  if (!ac || !noiseBuf) return;
+  musicStop(true);
+  try {
+    MUS.bus = ac.createGain(); MUS.lp = ac.createBiquadFilter();
+    MUS.lp.type = 'lowpass'; MUS.lp.frequency.value = 900; MUS.lp.connect(MUS.bus); MUS.bus.connect(master);
+    MUS.bus.gain.setValueAtTime(.0001, ac.currentTime); MUS.bus.gain.exponentialRampToValueAtTime(.55, ac.currentTime+1.2);
+    MUS.next = ac.currentTime + .1; MUS.step = 0; MUS.timer = setInterval(musTick, 60); musTick();
+  } catch (e) { MUS.bus = null; }
+}
+function musicStop(now){
+  if (MUS.timer) { clearInterval(MUS.timer); MUS.timer = null; }
+  const bus = MUS.bus; MUS.bus = null;
+  if (bus && ac) { try { bus.gain.cancelScheduledValues(ac.currentTime); bus.gain.setTargetAtTime(.0001, ac.currentTime, now ? .01 : .4);
+    setTimeout(() => { try { bus.disconnect(); } catch (e) {} }, now ? 100 : 2500); } catch (e) {} }
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) musicStop(true); else if (state !== 'menu' && state !== 'over' && ac) musicStart(); });
 
 /* ---------- world ---------- */
 function dispose(o){ o.traverse(c => { if (c.geometry) c.geometry.dispose(); }); scene.remove(o); }
@@ -874,7 +958,7 @@ function makeBlock(i, kind, x, z, alongX){
     const c2 = cyl(coin,.085,.085,.04,20,'#E0A526',0,0,0,false); c2.rotation.x = Math.PI/2;
   }
   g.position.set(x,0,z); scene.add(g);
-  return Object.assign({ board:!!sp || !!info.brand, collapse:cracked, tiny, sponsor: adKey, coin, sink:0, i, kind, city, x, z, bx:x, bz:z, g, dot, dwellDone:false, stopped:false,
+  return Object.assign({ ad:sp, board:!!sp || !!info.brand, collapse:cracked, tiny, sponsor: adKey, coin, sink:0, i, kind, city, x, z, bx:x, bz:z, g, dot, dwellDone:false, stopped:false,
     ax:alongX?1:0, az:alongX?0:1, phase:rnd(0,6), spd:1.6+d*1.5, age:0, land:9, sq:1 }, info);
 }
 const half = (b, alongX) => b.shape==='cyl' ? b.r : alongX ? b.wx : b.wz;
@@ -902,7 +986,7 @@ function spawnNext(){
   const minI = blocks[0].i;
   scenery = scenery.filter(s => { if (s.i < minI) { dispose(s.g); return false; } return true; });
   yawTo = alongX ? -2.36-.4 : -2.36+.4;
-  if (b.ice && !hinted.ice) { hinted.ice = true; popup('Icy roof ahead: land short', false, 34, .35); }
+  if (b.ice && !hinted.ice) { hinted.ice = true; hint('Icy roof ahead: land short'); }
   blocks.forEach(o => { o.dot.visible = o === b; });
 }
 function inBlock(b, x, z){
@@ -912,7 +996,7 @@ function inBlock(b, x, z){
 }
 function reset(){
   blocks.forEach(b => dispose(b.g)); scenery.forEach(s => dispose(s.g)); parts.forEach(q => { scene.remove(q.m); q.m.material.dispose(); });
-  blocks=[]; scenery=[]; parts=[]; fx.textContent=''; killTrail();
+  blocks=[]; scenery=[]; parts=[]; fx.textContent=''; killTrail(); clearPops(); creditT = 0; $('credit').classList.remove('show');
   killFruit(); slices=0; hinted={}; slide=null; runAds={}; runCoins=0; score=0; combo=0; topStreak=0; hops=0; cityIdx=0; dirBal=0; chargeT=0; jump=null; fall=null; wob=0; dwellT=0; squashT=9;
   const start = makeBlock(0,'stone',0,0,true); start.age = 2; start.wx = start.wz = Math.max(start.wx,.74);
   blocks.push(start); spawnNext();
@@ -936,15 +1020,34 @@ function updateHud(){
   $('city').textContent = CITIES[cityIdx].name;
   $('next').textContent = `${CITIES[(cityIdx+1)%CITIES.length].name} in ${left} hop${left===1?'':'s'}`;
   $('prog').style.width = (n/HOPS*100)+'%';
+  SHARE.hud(score);
   $('streak').textContent = `Streak ×${combo}`; $('streak').classList.toggle('on', combo > 1);
   CONTEST.hud(score);
 }
 const v3 = new T.Vector3();
-function popup(text, big, dy, delay){
+// Score popups queue so two never land on top of each other; tips go to a fixed slot and stay long enough to read.
+const popQ = [], hintQ = []; let popWait = 0, hintWait = 0;
+function popup(text, big, dy){ if (popQ.length > 4) popQ.shift(); popQ.push([text, big, dy]); }
+function hint(text){ if (!hintQ.includes(text) && $('hint').textContent !== text) hintQ.push(text); }
+function flushPops(dt){
+  popWait -= dt; hintWait -= dt;
+  if (popWait <= 0 && popQ.length) { showPop(...popQ.shift()); popWait = .3; }
+  if (hintWait <= 0) {
+    const el = $('hint');
+    if (el.classList.contains('show')) { el.classList.remove('show'); hintWait = .3; }
+    else if (hintQ.length && bannerTimer <= 0) { el.textContent = hintQ.shift(); el.classList.add('show'); hintWait = 1.7; }
+  }
+}
+function clearPops(){ popQ.length = 0; hintQ.length = 0; popWait = hintWait = 0; $('hint').classList.remove('show'); $('hint').textContent = ''; }
+let creditT = 0;
+function credit(sp){                       // one quiet line when you land on a board, so the name is read at least once
+  const el = $('credit'); el.textContent = sp.free ? 'Your ad here · أعلن هنا' : 'Sponsor · ' + sp.name + (sp.phone ? ' · ' + sp.phone : '');
+  el.classList.add('show'); creditT = 1.8;
+}
+function showPop(text, big, dy){
   v3.set(p.x, p.y+1.15, p.z).project(camera);
   const el = document.createElement('div'); el.className = 'pop'+(big?' big':''); el.textContent = text;
   el.style.left = ((v3.x*.5+.5)*W)+'px'; el.style.top = ((-v3.y*.5+.5)*H-(dy||0))+'px';
-  if (delay) el.style.animationDelay = delay+'s';
   el.addEventListener('animationend', () => el.remove()); fx.appendChild(el);
 }
 
@@ -990,7 +1093,7 @@ function makeFruit(a, b, dist){
   const x = (a.x+b.x)/2, z = (a.z+b.z)/2, y = (a.h+b.h)/2 + .95 + dist*.16 + .5;
   g.position.set(x,y,z); g.scale.setScalar(.001); scene.add(g);
   fruit = { g, x, y, z, col, t:0 };
-  if (!hinted.slice) { hinted.slice = true; popup('Tap in mid-air to slice', false, 34, .35); }
+  if (!hinted.slice) { hinted.slice = true; hint('Tap in mid-air to slice'); }
 }
 function slash(){
   jump.slashed = true; swordSwing();
@@ -1073,6 +1176,7 @@ function land(){
     state = 'fall'; combo = 0; updateHud();
     const s = j.over ? 1 : -1;
     const v = j.res==='slip' ? .9*s : j.over ? 1.7 : 0;
+    SHARE.capture();
     fall = { t:0, vy:-1.2, vx:j.dx*v, vz:j.dz*v, alongX:j.alongX, s, rot:0, gt:0 };
     blip(760,.75,'sine',.07,0,170);
     return;
@@ -1082,10 +1186,11 @@ function land(){
   const b = blocks[blocks.length-1], c = CITIES[b.city];
   b.land = 0; hops++;
   if (b.sponsor && runAds[b.sponsor]) runAds[b.sponsor][1]++;
+  if (b.ad) credit(b.ad);
   if (j.info.dist <= PERFECT) {
     combo++; topStreak = Math.max(topStreak, combo);
-    const pts = 2*combo; score += pts;
-    popup(combo>1 ? `Perfect ×${combo}  +${pts}` : `Perfect +${pts}`, true);
+    const mult = Math.min(combo, comboCap()), pts = 2*mult; score += pts;
+    popup(combo>1 ? `Perfect ×${mult}  +${pts}` : `Perfect +${pts}`, true);
     ringFx(b); sparkle(6+Math.min(combo,6)*2, [c.accent,'#FFB703','#FFFFFF']);
     const n = c.notes[Math.min(combo-1, c.notes.length-1)];
     blip(n,.4,c.wave,.24,0,0,true); blip(n*2,.25,'sine',.06,.03,0,true); thud();
@@ -1096,22 +1201,22 @@ function land(){
   }
   if (b.coin) {
     if (j.info.dist <= .36) { coins++; runCoins++; try { localStorage.setItem('ronin.coins', String(coins)); } catch (e) {}
-      popup('+1 coin', false, 24, .12); blip(1318.5,.09,'square',.05,.05); blip(1760,.16,'square',.05,.12); }
+      popup('+1 coin', false, 24); blip(1318.5,.09,'square',.05,.05); blip(1760,.16,'square',.05,.12); }
     b.g.remove(b.coin); b.coin.traverse(c => { if (c.geometry) c.geometry.dispose(); }); b.coin = null;
   }
   if (b.brand) { score += 10; b.doorT = 0; popup(`${b.brand} +10`, true, 34, .12); sparkle(12, [BR.gold2,'#FFFFFF',BR.gold]); blip(1046.5,.18,'sine',.12,.08,0,true); blip(1568,.3,'sine',.1,.18,0,true); }
-  if (b.collapse && !hinted.collapse) { hinted.collapse = true; popup('Cracked tower: it falls when you jump', false, -28, .15); }
-  if (b.crumble) { b.crT = 0; popup('Loose tile, hurry!', false, -26, .1); }
-  if (b.boost) { popup('Drum boost: hold shorter!', false, -26, .1); blip(110,.25,'sine',.3,0,60); }
+  if (b.collapse && !hinted.collapse) { hinted.collapse = true; hint('Cracked tower: it falls when you jump'); }
+  if (b.crumble) { b.crT = 0; hint('Loose tile, hurry!'); }
+  if (b.boost) { hint('Drum boost: hold shorter!'); blip(110,.25,'sine',.3,0,60); }
   if (b.city !== cityIdx) arrive(b.city, b.i);
   dwellT = 0;
-  if (b.dwell) popup('Stay for +10', false, -26, .25);
+  if (b.dwell) hint('Stay here for +10');
   spawnNext();
   if (b.ice) { state = 'slide'; slide = { vx:j.dx*1.7, vz:j.dz*1.7 }; whoosh(.5,2600,900,.07); } else state = 'idle';
   updateHud();
 }
 function gameOver(){
-  state = 'over';
+  state = 'over'; musicStop();
   const isBest = score > best;
   if (isBest) { best = score; try { localStorage.setItem('cityhop.best', String(best)); } catch (e) {} }
   $('finalScore').textContent = score; $('finalBest').textContent = best + (isBest && score>0 ? ' (new)' : '');
@@ -1120,15 +1225,16 @@ function gameOver(){
   const ads = Object.keys(runAds).map(n => `${n} ${runAds[n][0]}/${runAds[n][1]}`);
   const owner = location.hash === '#stats';   /* owner only: add #stats to the link */
   $('finalAds').hidden = !owner; $('finalAds').textContent = ads.length ? 'Sponsor spots (shown/landed on): ' + ads.join(' · ') : '';
-  if (owner) COUNT.read().then(([d, g]) => { $('finalAds').textContent = 'Devices: ' + (d == null ? '–' : d) + ' · Games played: ' + (g == null ? '–' : g) + (ads.length ? ' · Sponsor spots (shown/landed on): ' + ads.join(' · ') : ''); });
+  if (owner) COUNT.read().then(([d, g, sh]) => { $('finalAds').textContent = 'Devices: ' + (d == null ? '–' : d) + ' · Games played: ' + (g == null ? '–' : g) + ' · Shares: ' + (sh == null ? '–' : sh) + (ads.length ? ' · Sponsor spots (shown/landed on): ' + ads.join(' · ') : ''); });
   $('finalCities').textContent = 'Worlds reached: ' + stamps.map(s => CITIES.find(c => c.id===s).name).join(', ');
   $('best').textContent = best;
   CONTEST.finish(score, hops);
+  SHARE.finish(score, isBest, stamps.length);
   app.classList.remove('playing'); $('over').hidden = false; $('againBtn').focus({ preventScroll:true });
 }
 function startGame(){
   COUNT.game(); CONTEST.begin();
-  initAudio(); reset(); state = 'idle';
+  initAudio(); reset(); state = 'idle'; musicStart(); SHARE.begin();
   $('menu').hidden = true; $('over').hidden = true; app.classList.add('playing');
   blip(523.25,.18,'triangle',.18,0,0,true); blip(783.99,.24,'triangle',.18,.1,0,true);
 }
@@ -1161,6 +1267,8 @@ function update(dt){
   if (fruit) { fruit.t += dt; fruit.g.position.y = fruit.y + Math.sin(fruit.t*3)*.12; fruit.g.rotation.y += dt*1.5; fruit.g.scale.setScalar(Math.max(.001, reduce ? 1 : backOut(Math.min(1, fruit.t/.35)))); }
   anchor += (((state==='menu'||state==='over') ? .42 : .56)-anchor)*(1-Math.exp(-dt*5));
   if (mixT < 1) mixT = Math.min(1, mixT+dt/1.3);
+  flushPops(dt);
+  if (creditT > 0) { creditT -= dt; if (creditT <= 0) $('credit').classList.remove('show'); }
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').classList.remove('show'); }
   const cur = blocks[blocks.length-2], nx = blocks[blocks.length-1];
 
@@ -1275,7 +1383,7 @@ function frame(ts){
 /* ---------- contest (hosted site only) ---------- */
 const CONTEST = (() => {
   const API = ['play.muriegarage.com', 'carmasterq8.github.io'].includes(location.hostname) ? 'https://ronin-hop-contest-api.onrender.com' : location.hostname === 'localhost' ? 'http://127.0.0.1:8811' : '';
-  let me = null, open = false, tokenP = null, tokenAt = 0, busy = false, boardTop = [], passedN = 0, lastScore = 0;
+  let me = null, open = Date.now() < CONTEST_END, tokenP = null, tokenAt = 0, busy = false, boardTop = [], passedN = 0, lastScore = 0;
   const get = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
   const put = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
   const call = (path, body) => fetch(API + path, body ? { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) } : undefined)
@@ -1322,7 +1430,7 @@ const CONTEST = (() => {
       if (!API) return;
       me = get('ronin.player');
       $('contest').hidden = false; $('menu').classList.add('has-contest'); showForm();
-      $('shareBtn').hidden = false; $('shareBtn').addEventListener('click', () => CONTEST.share());
+      
       $('pEdit').addEventListener('click', () => { $('pName').value = me.name; $('pPhone').value = me.phone; me = null; showForm(); $('pName').focus(); });
       $('ocJoin').addEventListener('click', () => { $('over').hidden = true; $('menu').hidden = false; state = 'menu'; $('pName').focus(); });
       call('/api/board').then(r => { if (r.ok) { lead(r.j); if (open && me && get('ronin.pending')) { const p = get('ronin.pending'); upload(p.score, p.hops, true).catch(() => {}); } } }).catch(() => {});
@@ -1381,6 +1489,131 @@ const CONTEST = (() => {
     },
   };
 })();
+/* ---------- share & challenge: share sheet, WhatsApp, challenge links, score card picture, golden-hat reward ---------- */
+const SHARE = (() => {
+  const SITE = 'https://play.muriegarage.com/';
+  const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+  const q = new URLSearchParams(location.search);
+  const vsName = (q.get('vs') || '').replace(/[<>\n\r]/g, '').trim().slice(0, 18), vsScore = parseInt(q.get('s') || '', 10);
+  const vs = vsName && vsScore > 0 && vsScore < 100000 ? { name: vsName, score: vsScore } : null;
+  let passed = false, shot = null, focus = [.5, .45], res = null, cardUrl = null, cardP = null;
+  const myName = () => { const n = ($('nick').value || '').trim().slice(0, 18); if (n) return n;
+    let pl = null; try { pl = JSON.parse(ls('ronin.player') || 'null'); } catch (e) {} return ls('ronin.nick') || (pl && pl.name) || ''; };
+  const link = () => { const u = new URL(SITE), n = myName(); if (n) u.searchParams.set('vs', n); u.searchParams.set('s', res.score); return u.toString(); };
+  const message = () => {
+    const sc = res.score, url = link();
+    if (vs && sc > vs.score) return `تغلّبت على ${vs.name} في رونين هوب 🥷 سجّلت ${sc}. دورك!\nI beat ${vs.name} in Ronin Hop with ${sc}. Your turn!\n${url}`;
+    return `سجّلت ${sc} في رونين هوب 🥷 تقدر تغلبني؟\nI scored ${sc} in Ronin Hop. Can you beat me?\n${url}`;
+  };
+  function note(t){ const el = $('shareNote'); el.textContent = t; el.hidden = !t; }
+  function reward(){
+    COUNT.share();
+    const n = ($('nick').value || '').trim(); if (n) ls('ronin.nick', n.slice(0, 18));
+    if (ls('ronin.gold') === '1') return;
+    ls('ronin.gold', '1'); goldHat(true); coins += 10; ls('ronin.coins', String(coins)); updateHud();
+    note('Thanks for sharing! Golden hat unlocked + 10 coins · شكراً! قبعة ذهبية + ١٠ عملات');
+    blip(1046.5,.12,'triangle',.18,0,0,true); blip(1318.5,.12,'triangle',.18,.1,0,true); blip(1568,.3,'triangle',.18,.2,0,true);
+  }
+  // score card: 1080x1350, the moment of the fall, the score, worlds reached, Murei Garage band
+  function card(){
+    const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'), w = CITIES[cityIdx], LAT = 'Unbounded, "Arial Black", Arial, sans-serif', ARA = 'Changa, Tahoma, sans-serif';
+    const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, w.bg1); g.addColorStop(1, w.bg2); x.fillStyle = g; x.fillRect(0, 0, W, H);
+    if (shot) {                                                     // cover-crop the game picture around the Ronin
+      const bw = W, bh = 700, by = 150, k = Math.max(bw / shot.width, bh / shot.height) * 1.25;
+      const sw = bw / k, sh = bh / k; let sx = focus[0] * shot.width - sw / 2, sy = focus[1] * shot.height - sh / 2;
+      sx = Math.max(0, Math.min(shot.width - sw, sx)); sy = Math.max(0, Math.min(shot.height - sh, sy));
+      const tmp = document.createElement('canvas'); tmp.width = bw; tmp.height = bh; const tx = tmp.getContext('2d');
+      tx.drawImage(shot, sx, sy, sw, sh, 0, 0, bw, bh);
+      tx.globalCompositeOperation = 'destination-out';           // soften the bottom edge into the background
+      const fade = tx.createLinearGradient(0, bh - 180, 0, bh); fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(1, 'rgba(0,0,0,1)');
+      tx.fillStyle = fade; tx.fillRect(0, bh - 180, bw, 180);
+      x.drawImage(tmp, 0, by);
+    }
+    x.fillStyle = w.ink; x.textBaseline = 'alphabetic'; x.textAlign = 'left'; x.direction = 'ltr';
+    x.font = `800 74px ${LAT}`; x.fillText('Ronin', 64, 118); const rw = x.measureText('Ronin ').width;
+    x.fillStyle = w.accent; x.fillText('Hop', 64 + rw, 118);
+    x.fillStyle = w.ink; x.font = `800 230px ${LAT}`; x.fillText(String(res.score), 56, 1035);
+    x.font = `600 34px ${LAT}`; x.globalAlpha = .75; x.fillText('SCORE', 66, 800 + 30); x.globalAlpha = 1;
+    // stamps for the worlds reached
+    ['I','II','III','IV'].forEach((r, k) => { const cx = 1080 - 70 - (3 - k) * 112, cy = 935, on = k < res.worlds;
+      x.beginPath(); x.arc(cx, cy, 44, 0, 7); x.lineWidth = on ? 7 : 4; x.strokeStyle = on ? w.accent : w.ink; x.globalAlpha = on ? 1 : .35;
+      if (on) { x.fillStyle = 'rgba(255,255,255,.75)'; x.fill(); } x.setLineDash(on ? [] : [9, 7]); x.stroke(); x.setLineDash([]);
+      x.fillStyle = on ? w.accent : w.ink; x.font = `800 30px ${LAT}`; x.textAlign = 'center'; x.fillText(r, cx, cy + 11); x.globalAlpha = 1; });
+    x.textAlign = 'left';
+    const beat = vs && res.score > vs.score;
+    x.fillStyle = w.ink; x.font = `800 46px ${LAT}`;
+    x.fillText(beat ? `I beat ${vs.name}!` : 'Can you beat me?', 64, 1110);
+    x.direction = 'rtl'; x.textAlign = 'right'; x.font = `800 50px ${ARA}`;
+    x.fillText(beat ? `تغلّبت على ${vs.name}!` : 'تقدر تغلبني؟', W - 64, 1110 + 66); x.direction = 'ltr'; x.textAlign = 'left';
+    // brand band
+    x.fillStyle = '#16181D'; x.fillRect(0, H - 150, W, 150);
+    if (IMG.murei) { x.save(); x.beginPath(); x.arc(64 + 52, H - 75, 52, 0, 7); x.clip(); x.drawImage(IMG.murei, 64, H - 127, 104, 104); x.restore(); }
+    x.fillStyle = '#FFFFFF'; x.font = `800 34px ${LAT}`; x.fillText('play.muriegarage.com', 196, H - 84);
+    x.font = `600 26px ${ARA}`; x.fillStyle = '#E8B04A'; x.fillText('Murei Garage · كراج مرعي', 196, H - 40);
+    return new Promise(r => c.toBlob(b => r(b), 'image/png'));
+  }
+  async function share(){
+    if (!res) return;
+    const text = message(); note('');
+    let file = null; try { const b = await cardP; if (b) file = new File([b], `ronin-hop-${res.score}.png`, { type: 'image/png' }); } catch (e) {}
+    try {
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file], text });
+      else if (navigator.share) await navigator.share({ text });
+      else { note('Use WhatsApp or Copy link below · استخدم واتساب أو انسخ الرابط'); return; }
+      reward();
+    } catch (e) { if (e && e.name !== 'AbortError') note('Use WhatsApp or Copy link below · استخدم واتساب أو انسخ الرابط'); }
+  }
+  function refreshLinks(){ if (!res) return; $('waBtn').href = 'https://wa.me/?text=' + encodeURIComponent(message()); }
+  return {
+    init(){
+      if (ls('ronin.gold') === '1') goldHat(true);
+      const known = ls('ronin.nick'); if (known) $('nick').value = known;
+      if (vs) { $('duel').hidden = false;
+        $('duelEn').textContent = `${vs.name} challenges you: beat ${vs.score}!`;
+        $('duelAr').textContent = `${vs.name} يتحداك: تغلّب على ${vs.score}!`; }
+      $('shareBtn').addEventListener('click', share);
+      $('waBtn').addEventListener('click', () => { refreshLinks(); setTimeout(reward, 800); });
+      $('copyBtn').addEventListener('click', () => {
+        const t = message();
+        (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { note('Copied. Paste it in any chat · تم النسخ'); reward(); })
+          .catch(() => note(link()));
+      });
+      $('nick').addEventListener('input', refreshLinks);
+    },
+    begin(){ passed = false; shot = null; res = null; this.hud(0); },
+    hud(sc){
+      const el = $('vs'); if (!vs) return;
+      el.classList.add('on'); el.classList.toggle('won', sc > vs.score);
+      el.textContent = sc > vs.score ? `Beat ${vs.name} ✓` : `${vs.name}: ${vs.score}`;
+      if (sc > vs.score && !passed && state !== 'menu') { passed = true; popup(`You passed ${vs.name}!`, true, 40);
+        blip(880,.15,'triangle',.2,0,0,true); blip(1174.66,.3,'triangle',.2,.12,0,true); }
+    },
+    capture(){
+      try { renderer.render(scene, camera); shot = shot || document.createElement('canvas'); shot.width = cvs.width; shot.height = cvs.height;
+        shot.getContext('2d').drawImage(cvs, 0, 0); v3.set(p.x, p.y + .4, p.z).project(camera); focus = [v3.x * .5 + .5, -v3.y * .5 + .5]; } catch (e) { shot = null; }
+    },
+    finish(score, isBest, worlds){
+      if (!shot) this.capture();
+      res = { score, worlds };
+      const maxW = parseInt(ls('ronin.maxw') || '1', 10), newWorld = worlds > maxW; if (newWorld) ls('ronin.maxw', String(worlds));
+      let en = '', ar = '';
+      if (vs && score > vs.score) { en = `You beat ${vs.name} by ${score - vs.score}! Send it back.`; ar = `تغلّبت على ${vs.name}! ردّ التحدي`; }
+      else if (vs && score === vs.score) { en = `Tied with ${vs.name}! One more hop wins it.`; ar = `تعادلت مع ${vs.name}! قفزة وحدة وتفوز`; }
+      else if (vs && score > 0) { en = `${vs.name} still leads by ${vs.score - score}. Hop again!`; ar = `${vs.name} متقدم بفارق ${vs.score - score}`; }
+      else if (isBest && score >= 15) { en = 'New best! Challenge your friends.'; ar = 'رقم جديد! تحدّ أصدقاءك'; }
+      else if (newWorld) { en = `You reached ${CITIES[worlds - 1].name}! Challenge your friends.`; ar = 'وصلت لعالم جديد! تحدّ أصدقاءك'; }
+      const head = $('shareHead'); head.hidden = !en; head.textContent = en;
+      if (ar) { const sp2 = document.createElement('span'); sp2.dir = 'rtl'; sp2.lang = 'ar'; sp2.textContent = ar; head.appendChild(sp2); }
+      $('share').classList.toggle('hot', !!en && !(vs && score <= vs.score));
+      $('shareBtn').textContent = vs && score > vs.score ? 'Send it back · ردّ التحدي' : 'Challenge friends · تحدّ أصدقاءك';
+      $('nickRow').hidden = !!myName(); $('share').hidden = score <= 0; note(ls('ronin.gold') === '1' ? '' : 'Share once to unlock the golden hat · شارك مرة لتحصل على القبعة الذهبية');
+      refreshLinks();
+      if (cardUrl) URL.revokeObjectURL(cardUrl);
+      cardP = card().then(b => { if (b) { cardUrl = URL.createObjectURL(b); $('saveBtn').href = cardUrl; $('saveBtn').download = `ronin-hop-${score}.png`; } return b; }).catch(() => null);
+    },
+  };
+})();
 /* ---------- anonymous play counter (hosted site only) ---------- */
 const COUNT = (() => {
   const API = 'https://abacus.jasoncameron.dev/', NS = 'carmasterq8-ronin-hop';
@@ -1390,7 +1623,8 @@ const COUNT = (() => {
     device(){ if (!live) return; try { if (localStorage.getItem('ronin.counted')) return; } catch (e) { return; }
       call('hit','devices').then(v => { if (v != null) try { localStorage.setItem('ronin.counted','1'); } catch (e) {} }); },
     game(){ if (live) call('hit','games'); },
-    read(){ return Promise.all([call('get','devices'), call('get','games')]); },
+    share(){ if (live) call('hit','shares'); },
+    read(){ return Promise.all([call('get','devices'), call('get','games'), call('get','shares')]); },
   };
 })();
 /* ---------- boot ---------- */
@@ -1401,7 +1635,7 @@ function start(data){
   try { coins = parseInt(localStorage.getItem('ronin.coins')||'0',10) || 0; } catch (e) {}
   coins = Math.max(coins, (data && data.coins) || 0);
   if (data && data.muted) { muted = true; $('mute').textContent = 'Sound off'; $('mute').setAttribute('aria-pressed','true'); }
-  COUNT.device(); CONTEST.init();
+  COUNT.device(); CONTEST.init(); SHARE.init();
   const go = () => { resize(); reset(); state = 'menu'; $('best').textContent = best; requestAnimationFrame(frame); };
   let ready; try { ready = Promise.all([document.fonts.load('800 40px Unbounded'), document.fonts.load('800 40px Changa', 'كراج مرعي'), loadLogos()]); } catch (e) { ready = loadLogos(); }
   Promise.race([ready.catch(() => {}), new Promise(r => setTimeout(r, 2500))]).then(go);
