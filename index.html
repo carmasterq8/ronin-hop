@@ -1881,7 +1881,6 @@ function runIntro(dt){
     const spin = easeIO(seg(t,.65,1.45)); G.rotation.y += spin*Math.PI*4;
     G.position.y = B.p.y + Math.sin(seg(t,.65,1.45)*Math.PI)*.16;
     const cut = seg(t,1.6,1.85); if (cut > 0 && cut < 1) k.rotation.z = -.5 - Math.sin(cut*Math.PI)*1.6;
-    once('v',.0,() => { if (ac) VOICE.kiai(ac, master, ac.currentTime + .25); });
     once('a',.35,() => { whoosh(.25,1800,6000,.1); blip(2400,.35,'triangle',.05,0,3200,true); });
     once('b',.7,() => { whoosh(.6,500,3000,.22); slashArc('#FFFFFF'); });
     once('c',1.05,() => slashArc('#F2EDE2'));
@@ -1896,7 +1895,7 @@ function runIntro(dt){
     I.ws.forEach((w, k) => { if (orb > 0 && orb < 1) { const a = orb*Math.PI*4 + k*Math.PI, R = .36*Math.sin(orb*Math.PI);
       w.position.set(Math.cos(a)*R, .3+Math.sin(orb*Math.PI)*.12, Math.sin(a)*R); w.rotation.set(Math.PI/2, 0, -a); w.scale.setScalar(1+.8*Math.sin(orb*Math.PI)); } else w.scale.setScalar(1); });
     once('a',.5,() => { puff(14,['#3B3448','#6B3FA0','#8A8197'],.3); whoosh(.5,300,1200,.2); blip(110,.4,'sine',.18,0,55); });
-    once('b',1.02,() => { puff(12,['#3B3448','#6B3FA0','#8A8197'],.35); whoosh(.35,2200,500,.16); if (ac) VOICE.laugh(ac, master, ac.currentTime + .05); });
+    once('b',1.02,() => { puff(12,['#3B3448','#6B3FA0','#8A8197'],.35); whoosh(.35,2200,500,.16); });
     once('c',1.55,() => { whoosh(.7,900,4200,.14); blip(1700,.06,'square',.05); blip(2100,.06,'square',.05,.1); });
     once('d',2.3,() => { blip(2600,.05,'triangle',.1); blip(3100,.05,'triangle',.1,.08); sparkle(8,['#6B3FA0','#FFFFFF']); });
   } else {
@@ -1907,7 +1906,6 @@ function runIntro(dt){
     const twirl = seg(t,1.75,2.4); if (twirl > 0 && twirl < 1) { st.position.set(.16,.24,.1); st.rotation.set(Math.PI/2, twirl*Math.PI*6, 0); }
     if (I.tail) I.tail.rotation.y = Math.sin(t*14)*.35*(t < ID-.3 ? 1 : 0);
     const land = seg(t,1.45,1.75); if (land > 0 && land < 1) { const k = .3*Math.sin(land*Math.PI*2)*(1-land); G.scale.set(B.s.x*(1+k*.6), B.s.y*(1-k), B.s.z*(1+k*.6)); }
-    once('a',.15,() => { if (ac) VOICE.monkey(ac, master, ac.currentTime + .02); });
     once('b',.45,() => { whoosh(.9,600,3800,.2); dust(8); });
     once('c',1.45,() => { blip(160,.18,'sine',.25,0,90); dust(10); sparkle(8,['#F2C14E','#D23A2E','#FFFFFF']); });
     once('d',1.75,() => whoosh(.6,800,2600,.15));
