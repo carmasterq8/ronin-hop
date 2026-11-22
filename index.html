@@ -15,7 +15,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ronin Hop">
 <link rel="icon" type="image/png" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
 <style>
 @font-face{font-family:'Unbounded';font-weight:500;src:url(fonts/unbounded-latin-500-normal.woff2) format('woff2')}
 @font-face{font-family:'Unbounded';font-weight:800;src:url(fonts/unbounded-latin-800-normal.woff2) format('woff2')}
@@ -187,6 +188,20 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 #menu.has-contest .contest p{font-size:13.5px}
 #menu.has-contest .contest .ar{font-size:14px}
 #menu.has-contest .contest input{padding:10px 12px}
+.homelink{align-self:center;background:none;border:0;padding:4px 6px;font:600 13px var(--body);color:var(--ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer;flex:none}
+#home{position:absolute;inset:0;z-index:6;display:grid;place-items:end center;padding:16px 16px calc(16px + env(safe-area-inset-bottom));background:rgba(10,12,16,.62)}
+.homecard{width:100%;max-width:420px;background:var(--paper);color:#1F2A33;border:2px solid #1F2A33;border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:12px;align-items:stretch;box-shadow:6px 6px 0 #1F2A33}
+.homecard img{align-self:center;border-radius:14px;border:2px solid #1F2A33}
+.homecard h3{font:800 16px/1.35 var(--display);text-align:center}
+.homecard h3 span,.homecard li span{display:block;font-family:'Changa','Noto Kufi Arabic',Tahoma,sans-serif;direction:rtl}
+.homecard ol{margin:0;padding:0;list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:10px}
+.homecard li{counter-increment:s;position:relative;padding-left:38px;font-size:14.5px;line-height:1.4;min-height:28px}
+.homecard li::before{content:counter(s);position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font:800 13px var(--display);display:grid;place-content:center}
+.homecard li span{font-size:15px;text-align:right}
+.homecard svg{width:18px;height:18px;vertical-align:-4px;margin:0 2px}
+.homecard .ghost{font:800 12.5px var(--display);letter-spacing:.04em;padding:12px 10px;border:2px solid #1F2A33;border-radius:14px;background:transparent;color:#1F2A33;cursor:pointer}
+#menu.has-contest .go{bottom:36px}
+#menu.has-contest .homelink{position:sticky;bottom:0;align-self:stretch;height:36px;margin:-10px -6px -10px;padding:6px 4px 0;background:var(--paper);font-size:11.5px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -245,6 +260,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
       <p id="lead" hidden></p>
     </div>
     <button class="go" id="startBtn" type="button">Begin the journey</button>
+    <button class="homelink" id="homeBtn" type="button" hidden>Save the game to your phone · احفظ اللعبة على هاتفك</button>
   </section>
 
   <section class="sheet" id="over" hidden aria-labelledby="overTitle">
@@ -267,8 +283,18 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     </div>
     <button class="go" id="againBtn" type="button">Hop again</button>
     <button class="ghost" id="shareBtn" type="button" hidden>Challenge a friend · تحدَّ صديقاً</button>
+    <button class="homelink" id="homeBtn2" type="button" hidden>Save the game to your phone · احفظ اللعبة على هاتفك</button>
   </section>
 
+  <div id="home" hidden role="dialog" aria-labelledby="homeT">
+    <div class="homecard">
+      <img src="icon-192.png" alt="" width="64" height="64">
+      <h3 id="homeT"></h3>
+      <ol id="homeSteps"></ol>
+      <button class="ghost" id="homeCopy" type="button" hidden>Copy the link · انسخ الرابط</button>
+      <button class="go" id="homeClose" type="button">OK · تم</button>
+    </div>
+  </div>
   <div id="turn">Turn your phone upright to play</div>
   <div id="fail" hidden><p>This game needs WebGL, which this browser has turned off. Open it in a current version of Chrome, Safari or Edge.</p></div>
 </div>
@@ -1698,7 +1724,7 @@ function gameOver(){
   const ads = Object.keys(runAds).map(n => `${n} ${runAds[n][0]}/${runAds[n][1]}`);
   const owner = location.hash === '#stats';   /* owner only: add #stats to the link */
   $('finalAds').hidden = !owner; $('finalAds').textContent = ads.length ? 'Sponsor spots (shown/landed on): ' + ads.join(' · ') : '';
-  if (owner) COUNT.read().then(([d, g]) => { $('finalAds').textContent = 'Devices: ' + (d == null ? '–' : d) + ' · Games played: ' + (g == null ? '–' : g) + (ads.length ? ' · Sponsor spots (shown/landed on): ' + ads.join(' · ') : ''); });
+  if (owner) COUNT.read().then(([d, g, h]) => { $('finalAds').textContent = 'Devices: ' + (d == null ? '–' : d) + ' · Games played: ' + (g == null ? '–' : g) + ' · Saved to phone: ' + (h == null ? 0 : h) + (ads.length ? ' · Sponsor spots (shown/landed on): ' + ads.join(' · ') : ''); });
   $('finalCities').textContent = (champs ? `Champion ×${champs}. ` : '') + 'Worlds reached: ' + stamps.map(s => CITIES.find(c => c.id===s).name).join(', ');
   $('best').textContent = best;
   CONTEST.finish(score, hops);
@@ -1972,7 +1998,58 @@ const COUNT = (() => {
     device(){ if (!live) return; try { if (localStorage.getItem('ronin.counted')) return; } catch (e) { return; }
       call('hit','devices').then(v => { if (v != null) try { localStorage.setItem('ronin.counted','1'); } catch (e) {} }); },
     game(){ if (live) call('hit','games'); },
-    read(){ return Promise.all([call('get','devices'), call('get','games')]); },
+    home(){ if (!live) return; try { if (localStorage.getItem('ronin.homed')) return; localStorage.setItem('ronin.homed','1'); } catch (e) { return; } call('hit','homes'); },
+    read(){ return Promise.all([call('get','devices'), call('get','games'), call('get','homes')]); },
+  };
+})();
+/* ---------- save to home screen (hosted site only) ---------- */
+const HOME = (() => {
+  const ua = navigator.userAgent;
+  const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const inApp = /Instagram|FBAN|FBAV|FB_IOS|FB_IAB|TikTok|musical_ly|Bytedance|Snapchat|Twitter|WhatsApp/i.test(ua);
+  const SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Share"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v10h14V11h-1"/></svg>';
+  let ev = null;
+  const hide = () => { for (const id of ['homeBtn','homeBtn2']) $(id).hidden = true; };
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); ev = e; });
+  window.addEventListener('appinstalled', () => { COUNT.home(); hide(); $('home').hidden = true; });
+  function guide(){
+    let title, steps, copy = false;
+    if (inApp) {
+      copy = true;
+      title = ['Open the game in ' + (ios ? 'Safari' : 'Chrome') + ' first', 'افتح اللعبة في ' + (ios ? 'سفاري' : 'كروم') + ' أولاً'];
+      steps = [['Tap the ••• or ⋮ menu of this page.', 'اضغط على قائمة ••• أو ⋮ في هذه الصفحة.'],
+               ['Choose “Open in ' + (ios ? 'Safari' : 'Chrome') + '” or “Open in browser”.', 'اختر «فتح في ' + (ios ? 'سفاري' : 'كروم') + '» أو «فتح في المتصفح».'],
+               ['There, tap “Save the game to your phone” again.', 'ثم اضغط مجدداً على «احفظ اللعبة على هاتفك».']];
+    } else if (ios) {
+      title = ['Add Ronin Hop to your Home Screen', 'أضف Ronin Hop إلى الشاشة الرئيسية'];
+      steps = [['Tap the Share button ' + SHARE + ' in your browser bar.', 'اضغط على زر المشاركة ' + SHARE + ' في شريط المتصفح.'],
+               ['Scroll down and tap “Add to Home Screen”.', 'مرّر للأسفل واضغط «إضافة إلى الشاشة الرئيسية».'],
+               ['Tap “Add”. The game icon appears on your phone.', 'اضغط «إضافة»، وستظهر أيقونة اللعبة على هاتفك.']];
+    } else {
+      title = ['Add Ronin Hop to your Home screen', 'أضف Ronin Hop إلى الشاشة الرئيسية'];
+      steps = [['Tap the ⋮ menu of your browser.', 'اضغط على قائمة ⋮ في المتصفح.'],
+               ['Tap “Add to Home screen” or “Install app”.', 'اضغط «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».'],
+               ['Confirm. The game icon appears on your phone.', 'أكّد، وستظهر أيقونة اللعبة على هاتفك.']];
+    }
+    $('homeT').innerHTML = title[0] + '<span>' + title[1] + '</span>';
+    $('homeSteps').innerHTML = steps.map(q => '<li>' + q[0] + '<span>' + q[1] + '</span></li>').join('');
+    $('homeCopy').hidden = !copy; $('home').hidden = false; $('homeClose').focus({ preventScroll:true });
+  }
+  function open(){
+    if (ev) { const e = ev; ev = null; e.prompt(); if (e.userChoice) e.userChoice.catch(() => {}); return; }
+    guide();
+  }
+  return {
+    init(){
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
+      if (standalone) { COUNT.home(); return; }
+      for (const id of ['homeBtn','homeBtn2']) { $(id).hidden = false; $(id).addEventListener('click', open); }
+      $('homeClose').addEventListener('click', () => { $('home').hidden = true; });
+      $('home').addEventListener('click', e => { if (e.target === $('home')) $('home').hidden = true; });
+      $('homeCopy').addEventListener('click', () => { const b = $('homeCopy'), u = location.origin + location.pathname;
+        (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => { b.textContent = 'Copied · تم النسخ'; }, () => { b.textContent = u; }); });
+    },
   };
 })();
 /* ---------- boot ---------- */
@@ -1983,7 +2060,7 @@ function start(data){
   try { coins = parseInt(localStorage.getItem('ronin.coins')||'0',10) || 0; } catch (e) {}
   coins = Math.max(coins, (data && data.coins) || 0);
   if (data && data.muted) { muted = true; $('mute').textContent = 'Sound off'; $('mute').setAttribute('aria-pressed','true'); }
-  COUNT.device(); CONTEST.init();
+  COUNT.device(); CONTEST.init(); HOME.init();
   const go = () => { resize(); reset(); state = 'menu'; $('best').textContent = best; requestAnimationFrame(frame); };
   let ready; try { ready = Promise.all([document.fonts.load('800 40px Unbounded'), document.fonts.load('800 40px Changa', 'كراج مرعي'), loadLogos()]); } catch (e) { ready = loadLogos(); }
   Promise.race([ready.catch(() => {}), new Promise(r => setTimeout(r, 2500))]).then(go);
