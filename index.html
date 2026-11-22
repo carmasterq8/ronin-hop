@@ -151,6 +151,15 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 #app.finale .hud,#app.finale .passport{opacity:0}
 .hud{transition:color .8s,opacity .3s}
 @media (prefers-reduced-motion:reduce){.stamp.pop2{animation:none}#banner,.bar i{transition:none}#sky,#rain.on,#champ strong,#champ b{animation:none!important}}
+.fighters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:2px 0 4px}
+.flabel{grid-column:1/-1;font:600 12px var(--body);text-align:center;opacity:.85}
+.fighter{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 4px 6px;border:2px solid rgba(31,42,51,.25);border-radius:14px;background:#FFF7E8;color:#1F2A33;cursor:pointer;font:inherit;min-height:44px}
+.fighter img{width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid rgba(31,42,51,.2)}
+.fighter b{font:800 11px var(--display);letter-spacing:.03em;text-transform:uppercase}
+.fighter i{font:700 11px 'Changa','Noto Kufi Arabic',Tahoma,sans-serif;font-style:normal;line-height:1}
+.fighter[aria-pressed="true"]{border-color:var(--accent);background:#fff;box-shadow:0 3px 0 var(--accent)}
+.fighter[aria-pressed="true"] img{border-color:var(--accent)}
+.fighter:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
 .sheet{max-height:calc(100% - 32px - env(safe-area-inset-bottom));overflow-y:auto}
 .contest{border:2px dashed var(--ink);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:color-mix(in srgb,var(--accent) 9%,var(--paper))}
@@ -245,6 +254,12 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     <h1 id="menuTitle">Ronin <em>Hop</em></h1>
     <p>Hold anywhere to charge, release to hop. Land dead centre for streaks and coins. In the Bamboo Forest, tap again in mid-air to slice fruit. Every 10 hops opens the next world.</p>
     <p class="note">Seven worlds, from the Bamboo Forest to the Sky Shrine, each harder than the last. Reach the Summit to become the champion.</p>
+    <div class="fighters" role="group" aria-label="Choose your fighter">
+      <span class="flabel">Choose your fighter · اختر مقاتلك</span>
+      <button class="fighter" type="button" data-f="ronin" aria-pressed="true"><img src="data:image/jpeg;base64,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" alt="" width="46" height="46"><b>Ronin</b><i lang="ar">رونين</i></button>
+      <button class="fighter" type="button" data-f="shizuka" aria-pressed="false"><img src="data:image/jpeg;base64,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" alt="" width="46" height="46"><b>Shizuka</b><i lang="ar">شيزوكا</i></button>
+      <button class="fighter" type="button" data-f="momo" aria-pressed="false"><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAQDAwQDAwQEBAQFBQQFBwsHBwYGBw4KCggLEA4RERAOEA8SFBoWEhMYEw8QFh8XGBsbHR0dERYgIh8cIhocHRz/2wBDAQUFBQcGBw0HBw0cEhASHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBz/wAARCABwAHADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD7wooorhOgKKKKACmySLEjO7BUUZJPQCnVx/xNvn0/wnPKknllpoo8+oLdKzqz5IOfZGlKHtJqHdjdU8ewxF4rCLzXU4MknCj6Dqaw18dXzvIJ7iNFI4CIFI/GvOU1VmjGwMw/2QTWPrGoyvC6/vIzjh9p4r5mWMxFWWsrLy0Pp44HD04WUbvzO91X4o3GhSrcQ3BmRTl4ZGyrjuPY+9ey6bfw6rp1pfW5JguokmTPXawBH86/P/xLquohmikkV0bhXU19wfDS9g1D4feGLm2QpC+nw7VJzjCgH9Qa9nAKSi03c8XMFG6aVjqqKKK9E84KKKKACiiigAoorlPG/jCw8M2SxT30Nvd3PEauecdCQP5VlWrRowdSeyLp03Ukox6mxfa5bWTGMEyzDqidvqa5LXpT4hjWG8RDao4dYcZG4dCT3NclH4vsyPllB96kPjCxBJJyOw3YxXzeJx1esmrNLsj3qODhRfMtX3NT+yrVFwsYA9jVO50e2kUjBH41nSeM7Jc55/4HjFZN143tQp+f5s+tccYSb+E7VNrdmT4q+Hum6tE4aNQ55DqNrA/Uf1r1D4Qa5plj4d0zwn5jRajpsPlKk2MzgEksp6HryOoryS/8cWpDZnCntkda5nUtcllmhutNv4HnhcSI0UuyRGHcZxzXo4XESw8ve28zjxVOFeNup9n0Vxfwx8bjxz4bW6mUR6nat5F5EBjD4yGA9GGD+fpXaV9FGSklJbM+flFxbi+gUUUVRIUUUUAFfMnx+sIvF2oWWo6O4F5p+bZnZ8LKM5BA9jnnvmvpiVDJE6A7SykA+mR1r4uGpagviqTwveo0OpQTGF0f1zgN7gg5z3FefmDqcsVA9LLoU5Sk579DjHj8WWYfNhcyRocF4xuX86pN4h1xM77W6GPWNv8ACvoD40+MZ/hb8HLubw8FS+aSO0iuHUOYmkPzScjG7AOM8AkVy/7Ouu6J4hsPskviO/8AFF8+nxXuox6pbjGnXJcqY0kIBIbJOMn7me5AcMMnT55Gk69qnIjyJtf1d+DBc/8AfDf4VVl1DVpesF3/AN+2/wAK+yr/AEHw7N8zaXb5UcbRj+VfIfjHxLpknxb8Z2OpeKrrwppWh2rjTILa2MyXlyirhHXByHJJ5xxwCOtXTw8ZuyJq1nBXZkyDVBE0kkNysa9WZSAPzqCORwclzuPpXsVppVrr/hbTdTjZoxqNnHO9u/O0ugJXP1NeVeItIbRLkAMTC+dpJ5BHUGs6tKy02Lpzvue1/s2+IZ7DxqbOabdaalA1vlmxiRfnT/2YfjX11X5//DCa41jx74W0zTMrK19FKzD+FUO9m/BVJr9AOta4RNQ5eiOTGRSmmuwUUUV1nGFFFFABXlnxOOk2+sWN9JbQLqdvA6fayo3rG5Hyk9x8ufb869Tr5h+N/iHytX1ZA3KN5YUdeFA/nXHjZNU0l1aO3AJe15n0RJ4u0XT/ABx4fudJ1GffZ3Kbco/K8ghl7bhgYPauc+G/hPw78HYrmxs9RnnvNYlB8y5wGcJnagCjHG4/UmqWoW+r+B5LPTtZTZO9tHMjDo6so/UH5T7isbW7+PWIIh5xjngbfFID901o1JR0O72lKtVi5LlW10evXfiJURmaTCqCST2FeFeN/hp4a+IPiIeJTqFwgmCrcRwY23G0bRyeVOBg4zT7vWNYvYGtpp4VjYbXdOrCmpqAt7VLeLIRBgUU3K90rE4ijTjC0pKTv01Vj1ay03So9PhQXMS2iQqqKJQvl4HTr0AwMe1cvLpFhqukayhK3CPIY4ZSOQAOGHpyf0rhpLoyHmul8NakBZXNsTzu3dexFYYuLjS900hWhUklypWNn9lTwe91451PWpYSIdGhaENjgzScY/BQx/EV9jV5h8A0tF8AK1rAkUjXlx57L1lk3feP4bR+Fen11UVaCPIxEuao/IKKZLKkEbyyuqRoCzOxwFA6knsK+ePiv+0bbaXFPp/hmZS4ysmoEcD/AK5g/wDoR/Ad6KtaNJXkdWX5ZiMfPkorRbt7L1f9M+iqKKK1PPCvHNS+DE+ufFFte1C6gbw9HKt2lquTJLMMHa3GAoYZ9+lex0VEoKVr9C4TlC/L1OX8d+BNM8faM1hfqUmTLW90g+eB/UeoPcdDXyN43+GniPwHPJ9utHm08H5L+3UtCw9/7p9j+tfaWtwyT6RfRxFhI0TbdpwemeKhk0Wz8VaNafa5J3tpY1cxxyFFY4/ixyf5U4vmqez8r/16afeNTcI8x+f32j/a/Wjzx619yT/BnwnMCBZyR/7r5x+YNYWofArTwjNp94sb9lngVh+YANbOi0P60ux82+CPhj4j8dzxmys3g04n57+4UrEo9u7n2Fe+ah8AdLtfBslhozD/AISBCJV1C44MzgfcbH3UOeg6HB5puj6jqngTUkt78S3en2rMsot3LpArgYIHrwTg/pmvX7G+ttTtIru0mWa3mG5HQ5BrnVqiatpe33f8Ecqsk01ocd8I/CN94L8F2+namY/7QeaW4mWJ9yoXP3Qe+ABWh48+Inh/4caO2p6/fLBGciGBfmmuG/uonUn36DuRXmXxm/aV0X4drcaVoph1bxKuVaNWzBaH/pow6sP7g59SK+OIYvHPx48ZssX2nWdZn5eVztito89Sfuxxj0/IE1DmorliejhculW/fYh8sd/X/JeZ3HxC/aV1/wAf6lLapCbLQmOy30+DLO7Z+UyEcux9BwOw716D8Kf2YtR8Uywa/wDEMS2unnDw6IGKzSjsZiPuD/ZHzHuRXrHwZ/Zv0D4XLDqd8Y9X8U4yb11/d257iFT0/wB4/MfbpXtlTGgubnnqzoxOcyjR+qYT3YL+v6b1Ciiiuk8AKKKKALMCgLu7mo7u8t9MtvNmZY4l4Hb8KsINqgegrC8YeFbbxloU+l3M00AchkmhOGRh0PuPUdxW9WNRUmqNua2l+5lFxc1z7EJ8daIkayvdBYy+wseinOOfati9kZYzg188eDPgTqN94mnufETSW2m6dKFWKI/8frAg5B7R9Pc5xxg19CX33TXBgJ4udNyxVvLS33nTXhRjJKk7nDa2MCUgAFzliBjJ9T614L8Wde1/wt4O1o+H9SuLBJdpuBAcEpnDFT/CcHkrg4r3/WFyGry7xNbQuw8+3juIA6l4ZVDJIAQSpB6g+ldrjdOJNKp7OpGbV7M+c/g7+zt4h+KssWp35l0nwuW3G8df3tyO4hU9c/3zx9a+7/BXgTQPh7okWj+HtPjtLRMFyOZJm/vu55Zvc/hiq/hr4i+EPE8q2eia9ptxcJlBaRShZF28FQhweOmAK6uueEFHY68ZjquJl7+i7BRRRVnEFIXVWUEgFqWuL8d+IW8PTadK5Igm3pu7Bhg4/L+VTJ2V0XCPNKx2U88MMZJbn61jad4hjudZXTWGXdSyMPbqDXlGq/EuPyTtl/I1Z+DupS+JvF9/fBi1vZW2Cf8AbduB+Smpp80pq5tOlGnTd3dnu9FFFekecB6Vn3x4NXz0rOvTwaynuXA5LVh96vPdbtHunEMS7pJGCqo7k8CvRNTGQa4u9uxp11HeHpA2+s27K5qldpHjfxO+DOj/AA6gsNXjuZ5/E+s3rFX34itcgDEajnO5x8xP5V9M6feWfgvStP0yS5uJ7W1jWIz3MplkHuzHlhn9K+b/AI8+MI9T1LwaQ4McVwxPP+3F/hWv4s8ffa43VZc9iD3rzoOTqSl6H0GKjFYKhTf95v1vb8Ej6mBDAEEEHkEUtc/4Fne58GaBNIweSSyiYspyD8vrXQV2Hz7P/9k=" alt="" width="46" height="46"><b>Momo</b><i lang="ar">مومو</i></button>
+    </div>
     <div class="contest" id="contest" hidden>
       <strong>Murei Garage contest · مسابقة كراج مرعي</strong>
       <p>Top 3 scores by 30 November win free:</p>
@@ -909,31 +924,115 @@ const player = new T.Group(), squash = new T.Group(), pivot = new T.Group(), yaw
 scene.add(player); player.add(squash); squash.add(pivot); pivot.add(yawG); yawG.add(model);
 pivot.position.y = .3; model.position.y = -.3; player.scale.setScalar(1.65);
 let beret, bowler;
+const FIGHTERS = ['ronin','shizuka','momo'], figG = {};
 (function buildPlayer(){
-  const N = '#27354F', sp = (r,a,b) => new T.SphereGeometry(r,a||18,b||14);
+  const sp = (r,a,b) => new T.SphereGeometry(r,a||18,b||14);
   const ring = (R,t) => { const g = new T.TorusGeometry(R,t,10,32); g.rotateX(Math.PI/2); return g; };
-  put(model, lathe([[0,0],[.1,0],[.13,.03],[.125,.12],[.085,.27],[.04,.31],[0,.315]]), N, 0,0,0);
-  for (const s of [-1,1]) {
-    put(model, sp(.045,12,10), '#1B2437', s*.055,.022,.085).scale.set(1,.5,1.3);
-    put(model, sp(.04,12,10), N, s*.135,.17,.03);
-    put(model, sp(.016,10,8), mat('#1E1E26',true), s*.042,.424,.123, false).scale.set(1.5,.55,.6);
+  const BODY = [[0,0],[.1,0],[.13,.03],[.125,.12],[.085,.27],[.04,.31],[0,.315]];
+  const SKIN = '#F2D3BD';
+
+  function ronin(model){
+    const N = '#27354F';
+    put(model, lathe(BODY), N, 0,0,0);
+    for (const s of [-1,1]) { put(model, sp(.045,12,10), '#1B2437', s*.055,.022,.085).scale.set(1,.5,1.3); put(model, sp(.04,12,10), N, s*.135,.17,.03);
+      put(model, sp(.016,10,8), mat('#1E1E26',true), s*.042,.424,.123, false).scale.set(1.5,.55,.6); }
+    put(model, sp(.11,24,18), N, 0,.41,0);
+    put(model, sp(.097,20,14), '#F3D7BF', 0,.422,.03, false).scale.set(.95,.3,.9);
+    put(model, ring(.07,.022), '#B33A3A', 0,.318,0);
+    for (let i=0;i<5;i++) { const t = box(model,.06-i*.006,.012,.05,'#B33A3A',.03+i*.004,.325+i*.006,-.085-i*.04,false); t.rotation.x = -.25-i*.08; }
+    put(model, ring(.124,.02), '#F2EDE2', 0,.13,0); box(model,.05,.07,.03,'#F2EDE2',.07,.11,.11,false);
+    const hat = new T.Group(); model.add(hat);
+    put(hat, new T.ConeGeometry(.21,.1,36), '#D9B56B', 0,.05,0); put(hat, new T.ConeGeometry(.212,.012,36), '#B8934A', 0,.004,0, false); put(hat, sp(.02,10,8), '#B8934A', 0,.1,0);
+    hat.position.set(0,.495,-.03); hat.rotation.x = -.42;
+    const k = new T.Group(); model.add(k);
+    box(k,.02,.36,.02,'#1B1B22',0,.02,0); box(k,.05,.014,.03,'#F2C14E',0,-.165,0,false); box(k,.024,.1,.024,'#3A2A2A',0,-.22,0);
+    k.position.set(-.14,.16,.02); k.rotation.x = 1.15; k.rotation.z = .25;
   }
-  put(model, sp(.11,24,18), N, 0,.41,0);
-  put(model, sp(.097,20,14), '#F3D7BF', 0,.422,.03, false).scale.set(.95,.3,.9);
-  put(model, ring(.07,.022), '#B33A3A', 0,.318,0);
-  for (let i=0;i<5;i++) { const t = box(model,.06-i*.006,.012,.05,'#B33A3A',.03+i*.004,.325+i*.006,-.085-i*.04,false); t.rotation.x = -.25-i*.08; }
-  put(model, ring(.124,.02), '#F2EDE2', 0,.13,0);
-  box(model,.05,.07,.03,'#F2EDE2',.07,.11,.11,false);
-  const hat = new T.Group(); model.add(hat);
-  put(hat, new T.ConeGeometry(.21,.1,36), '#D9B56B', 0,.05,0);
-  put(hat, new T.ConeGeometry(.212,.012,36), '#B8934A', 0,.004,0, false);
-  put(hat, sp(.02,10,8), '#B8934A', 0,.1,0);
-  hat.position.set(0,.495,-.03); hat.rotation.x = -.42;
-  const k = new T.Group(); model.add(k);
-  box(k,.02,.36,.02,'#1B1B22',0,.02,0); box(k,.05,.014,.03,'#F2C14E',0,-.165,0,false); box(k,.024,.1,.024,'#3A2A2A',0,-.22,0);
-  k.position.set(-.14,.16,.02); k.rotation.x = 1.15; k.rotation.z = .25;
+
+  // shared girl face: full head, eyes, smile
+  function face(model, opt){
+    put(model, sp(.105,24,18), SKIN, 0,.41,0);
+    for (const s of [-1,1]) {
+      put(model, sp(.017,10,8), mat('#2A211C',true), s*.04,.418,.096, false).scale.set(1,1.25,.5);
+      put(model, sp(.006,8,6), mat('#FFFFFF',true), s*.04+.006,.425,.104, false);
+      put(model, sp(.016,10,8), mat(opt.blush,true), s*.068,.392,.084, false).scale.set(1.3,.7,.4);
+    }
+    const sm = new T.Mesh(new T.TorusGeometry(.024,.0055,8,20,Math.PI), mat(opt.smile,true)); sm.rotation.z = Math.PI; sm.position.set(0,.386,.099); model.add(sm);
+  }
+
+  // AISH -> "Shizuka" the silent one: black outfit, big wavy auburn-brown hair, round glasses, plum mask scarf and twin kunai
+  function shizuka(model){
+    const K = '#1E1D24', K2 = '#14141A', PL = '#6B3FA0', HAIR = '#5B3423', HAIR2 = '#46271A';
+    put(model, lathe(BODY), K, 0,0,0);
+    for (const s of [-1,1]) { put(model, sp(.045,12,10), K2, s*.055,.022,.085).scale.set(1,.5,1.3); put(model, sp(.043,12,10), K, s*.135,.17,.03); }
+    face(model, { blush:'#F2A9A0', smile:'#7A3B36' });
+    // a grin with braces: white teeth and a silver wire
+    const tt = box(model,.036,.009,.004,'#FFFFFF',0,.376,.103,false); tt.material = mat('#FFFFFF',true);
+    box(model,.034,.0025,.005,'#AEB8C2',0,.376,.105,false).material = mat('#AEB8C2',true);
+    // round glasses
+    for (const s of [-1,1]) { const r = new T.Mesh(new T.TorusGeometry(.03,.0055,8,28), mat('#2B2B33')); r.position.set(s*.04,.42,.1); model.add(r);
+      box(model,.032,.006,.006,'#2B2B33',s*.085,.425,.075,false).rotation.y = s*.9; }
+    box(model,.024,.005,.006,'#2B2B33',0,.428,.104,false);
+    // hair: big soft waves, side volume to the shoulders, bangs
+    const hb = put(model, sp(.13,24,18), HAIR, 0,.43,-.035); hb.scale.set(1.12,1.0,1.0);
+    const top = put(model, sp(.11,20,14), HAIR, 0,.49,.02); top.scale.set(1.05,.55,.95);
+    for (const s of [-1,1]) {
+      for (const [x,y,z,r] of [[.118,.39,-.035,.058],[.132,.33,-.04,.062],[.12,.27,-.05,.055],[.09,.31,-.09,.06]]) put(model, sp(r,14,10), (x*7|0)%2 ? HAIR2 : HAIR, s*x,y,z);
+      put(model, sp(.04,12,10), HAIR, s*.055,.475,.07).scale.set(1.1,.6,.8);
+    }
+    for (const [x,y,z,r] of [[0,.35,-.12,.07],[.05,.28,-.1,.055],[-.05,.28,-.1,.055]]) put(model, sp(r,14,10), HAIR2, x,y,z);
+    // plum mask scarf pulled down around the neck, with tails
+    put(model, ring(.074,.024), PL, 0,.318,0);
+    for (let i=0;i<5;i++) { const t = box(model,.058-i*.006,.012,.05,PL,-.03-i*.004,.325+i*.006,-.085-i*.04,false); t.rotation.x = -.25-i*.08; }
+    put(model, ring(.124,.02), PL, 0,.13,0);
+    // twin kunai crossed on the back
+    for (const s of [-1,1]) { const k = new T.Group(); model.add(k);
+      put(k, new T.ConeGeometry(.022,.13,4), '#C9D1D8', 0,.065,0); box(k,.012,.07,.012,K2,0,-.035,0); put(k, new T.TorusGeometry(.016,.005,6,14), PL, 0,-.08,0);
+      k.position.set(s*.1,.1,-.09); k.rotation.z = s*2.3; k.rotation.x = .2; }
+  }
+
+  // AIDA -> "Momo" the little monkey: white tee, lavender bottom, strawberry-blonde hair up in a messy bun, gold heart, red string, monkey tail and a bo staff
+  function momo(model){
+    const W = '#F5F2EA', LV = '#9B8CC4', HAIR = '#C98D58', HAIR2 = '#D9A56E', GOLD = '#F2C14E', RED = '#D23A2E';
+    put(model, lathe([[0,0],[.1,0],[.13,.03],[.127,.12],[0,.12]]), LV, 0,0,0);
+    put(model, lathe([[0,.118],[.127,.118],[.125,.12],[.085,.27],[.04,.31],[0,.315]]), W, 0,0,0);
+    for (const s of [-1,1]) { put(model, sp(.045,12,10), '#6E5F96', s*.055,.022,.085).scale.set(1,.5,1.3); put(model, sp(.04,12,10), SKIN, s*.135,.17,.03); }
+    const br = put(model, new T.TorusGeometry(.04,.007,6,18), RED, .135,.17,.03); br.rotation.y = Math.PI/2;
+    // gold heart pendant on a thin chain
+    const ch = new T.Mesh(new T.TorusGeometry(.06,.003,6,24,Math.PI), mat(GOLD)); ch.rotation.z = Math.PI; ch.rotation.x = -.35; ch.position.set(0,.31,.04); model.add(ch);
+    const hg = new T.Group(); model.add(hg); for (const s of [-1,1]) put(hg, sp(.013,10,8), GOLD, s*.009,.006,0, false);
+    const tip = put(hg, new T.ConeGeometry(.019,.025,12), GOLD, 0,-.01,0, false); tip.rotation.z = Math.PI; hg.position.set(0,.245,.112); hg.rotation.x = -.3;
+    face(model, { blush:'#F4A0A0', smile:'#B8483C' });
+    for (const [x,y] of [[-.06,.405],[-.052,.398],[.058,.404],[.066,.398]]) put(model, sp(.0035,6,4), mat('#C47E55',true), x,y,.093, false);
+    // hair: pulled back, messy bun, loose wisps
+    const hb = put(model, sp(.114,22,16), HAIR, 0,.425,-.02); hb.scale.set(1.04,1.0,1.0);
+    const fr = put(model, sp(.1,20,14), HAIR2, 0,.48,.035); fr.scale.set(1.02,.5,.9);
+    put(model, sp(.058,16,12), HAIR, 0,.53,-.07); put(model, sp(.03,10,8), HAIR2, .03,.565,-.05); put(model, sp(.028,10,8), HAIR2, -.035,.55,-.1);
+    for (const s of [-1,1]) { const w = put(model, sp(.022,10,8), HAIR2, s*.098,.37,.04); w.scale.set(.7,2.2,.7); w.rotation.z = s*.25;
+      put(model, sp(.03,10,8), HAIR, s*.1,.43,.01); }
+    // Monkey King circlet
+    const cr = put(model, new T.TorusGeometry(.107,.008,8,36), GOLD, 0,.465,.01); cr.rotation.x = Math.PI/2 - .25;
+    put(model, ring(.124,.02), RED, 0,.13,0);
+    // curly monkey tail
+    const pts = [[0,.07,-.12],[.02,.04,-.2],[.08,.07,-.26],[.1,.15,-.25],[.06,.2,-.21],[.02,.17,-.19],[.04,.13,-.2]].map(p => new T.Vector3(...p));
+    put(model, new T.TubeGeometry(new T.CatmullRomCurve3(pts), 40, .016, 8, false), '#8A5A3C', 0,0,0);
+    // bo staff on the back
+    const st = new T.Group(); model.add(st);
+    cyl(st,.014,.014,.62,10,RED,0,0,0); cyl(st,.018,.018,.05,10,GOLD,0,.3,0); cyl(st,.018,.018,.05,10,GOLD,0,-.3,0);
+    st.position.set(.02,.22,-.13); st.rotation.z = -.95; st.rotation.x = .15;
+  }
+  const B = { ronin, shizuka, momo };
+  for (const id of FIGHTERS) { const g = new T.Group(); model.add(g); B[id](g); g.visible = id === 'ronin'; figG[id] = g; }
   beret = new T.Group(); bowler = new T.Group(); model.add(beret); model.add(bowler);
 })();
+// the player's fighter: Ronin, Shizuka (the silent one) or Momo (the little monkey); remembered on this phone
+let fighter = 'ronin';
+function setFighter(id){
+  if (!figG[id]) id = 'ronin';
+  fighter = id; for (const k of FIGHTERS) figG[k].visible = k === id;
+  try { localStorage.setItem('ronin.fighter', id); } catch (e) {}
+  document.querySelectorAll('.fighter').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === id)));
+}
 
 /* ---------- audio ---------- */
 function initAudio(){
@@ -2101,6 +2200,12 @@ function start(data){
   best = Math.max(stored, (data && data.best) || 0);
   try { coins = parseInt(localStorage.getItem('ronin.coins')||'0',10) || 0; } catch (e) {}
   coins = Math.max(coins, (data && data.coins) || 0);
+  let fid = 'ronin'; try { fid = localStorage.getItem('ronin.fighter') || 'ronin'; } catch (e) {}
+  setFighter(fid);
+  document.querySelectorAll('.fighter').forEach(b => {
+    for (const ev of ['pointerdown','touchstart','mousedown']) b.addEventListener(ev, e => e.stopPropagation(), { passive:true });
+    b.addEventListener('click', e => { e.stopPropagation(); setFighter(b.dataset.f); initAudio(); blip(620,.12,'triangle',.16); blip(930,.14,'triangle',.12,.06); });
+  });
   if (data && data.muted) { muted = true; $('mute').textContent = 'Sound off'; $('mute').setAttribute('aria-pressed','true'); }
   COUNT.device(); CONTEST.init(); HOME.init();
   const go = () => { resize(); reset(); state = 'menu'; $('best').textContent = best; requestAnimationFrame(frame); };
