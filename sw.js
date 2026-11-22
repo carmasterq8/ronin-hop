@@ -9,3 +9,12 @@ self.addEventListener('fetch', e => {
   e.respondWith(fetch(r).then(res => { if (res.ok) { const cp = res.clone(); caches.open(C).then(c => c.put(key, cp)); } return res; })
     .catch(() => caches.match(key, { ignoreSearch:true }).then(m => m || Response.error())));
 });
+// record alerts
+self.addEventListener('push', e => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) {}
+  e.waitUntil(self.registration.showNotification(d.title || 'Ronin Hop', { body: d.body || '', icon: 'icon-192.png', badge: 'icon-192.png', tag: 'ronin-record', renotify: true, data: { url: d.url || './' } }));
+});
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type:'window', includeUncontrolled:true }).then(cs => { for (const c of cs) if ('focus' in c) return c.focus(); return self.clients.openWindow(e.notification.data && e.notification.data.url || './'); }));
+});

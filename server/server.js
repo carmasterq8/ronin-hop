@@ -3,6 +3,7 @@
 const http = require('http');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+let webpush = null; try { webpush = require('web-push'); } catch (e) { console.error('web-push missing: record alerts are off'); }
 
 const PORT = process.env.PORT || 10000;
 const ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://carmasterq8.github.io').split(',').map(s => s.trim());
@@ -11,6 +12,8 @@ const SECRET = process.env.TOKEN_SECRET || crypto.randomBytes(32).toString('hex'
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const TOP_N = 10;
 const TEST_PHONE = '96500000000';
+const SITE = 'https://play.muriegarage.com/';
+let VAPID = null;   // key pair for phone notifications, created once and kept in the database
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5 });
 
@@ -21,6 +24,52 @@ async function migrate() {
   await pool.query(`create table if not exists used_runs (nonce text primary key, at timestamptz not null default now())`);
   await pool.query(`create index if not exists players_rank on players (best desc, best_at asc)`);
   await pool.query('delete from players where phone = $1', [TEST_PHONE]);   // entry used for live checks, cleared on every start
+  // record alerts: push subscriptions per player, and notices shown inside the game
+  await pool.query(`create table if not exists settings (k text primary key, v text not null)`);
+  await pool.query(`create table if not exists push_subs (endpoint text primary key, phone text not null, sub jsonb not null, created_at timestamptz not null default now())`);
+  await pool.query(`create index if not exists push_subs_phone on push_subs (phone)`);
+  await pool.query(`create table if not exists notices (id bigserial primary key, phone text not null, by_name text not null, by_score integer not null,
+    rank integer not null, was integer not null, at timestamptz not null default now(), seen boolean not null default false)`);
+  await pool.query(`create index if not exists notices_phone on notices (phone) where not seen`);
+  await pool.query('delete from push_subs where phone = $1', [TEST_PHONE]); await pool.query('delete from notices where phone = $1', [TEST_PHONE]);
+  if (webpush) {
+    await pool.query('insert into settings (k, v) values ($1, $2) on conflict do nothing', ['vapid', JSON.stringify(webpush.generateVAPIDKeys())]);
+    VAPID = JSON.parse((await pool.query('select v from settings where k = $1', ['vapid'])).rows[0].v);
+    webpush.setVapidDetails(SITE, VAPID.publicKey, VAPID.privateKey);
+  }
+}
+
+// Tells every top-3 player the new score has just passed: a notice inside the game, plus a phone notification if they turned alerts on.
+async function overtaken(before, phone, name, best) {
+  const mine = before.findIndex(p => p.phone === phone);
+  for (let k = 0; k < before.length; k++) {
+    const p = before[k];
+    if (p.phone === phone || best <= p.best || (mine !== -1 && mine < k)) continue;
+    const rank = (await pool.query('select count(*)::int + 1 as rank from players where best > $1 or (best = $1 and best_at < $2)', [p.best, p.best_at])).rows[0].rank;
+    await pool.query('insert into notices (phone, by_name, by_score, rank, was) values ($1,$2,$3,$4,$5)', [p.phone, name, best, rank, k + 1]);
+    if (!webpush || !VAPID) continue;
+    const payload = JSON.stringify({ title: k === 0 ? 'Your record was broken! · كُسر رقمك القياسي' : 'You were passed · تم تجاوزك',
+      body: `${name} scored ${best}. You are now #${rank}. Take it back! · أنت الآن في المركز ${rank}`, url: SITE });
+    const subs = await pool.query('select endpoint, sub from push_subs where phone = $1', [p.phone]);
+    for (const s of subs.rows) webpush.sendNotification(s.sub, payload, { TTL: 86400 }).catch(e => {
+      if (e && (e.statusCode === 404 || e.statusCode === 410)) pool.query('delete from push_subs where endpoint = $1', [s.endpoint]).catch(() => {});
+      else console.error('push failed', e && (e.statusCode || e.message)); });
+  }
+}
+async function subscribe(body) {
+  const phone = cleanPhone(body.phone), sub = body.sub || {}, ep = String(sub.endpoint || '');
+  if (!phone || !/^https:\/\/[^\s]{10,900}$/.test(ep) || !sub.keys || typeof sub.keys.p256dh !== 'string' || typeof sub.keys.auth !== 'string') return [400, { error: 'sub' }];
+  if (!(await pool.query('select 1 from players where phone = $1', [phone])).rowCount) return [404, { error: 'player' }];
+  await pool.query('insert into push_subs (endpoint, phone, sub) values ($1,$2,$3) on conflict (endpoint) do update set phone = excluded.phone, sub = excluded.sub',
+    [ep, phone, JSON.stringify({ endpoint: ep, keys: { p256dh: sub.keys.p256dh.slice(0, 200), auth: sub.keys.auth.slice(0, 100) } })]);
+  await pool.query('delete from push_subs where phone = $1 and endpoint not in (select endpoint from push_subs where phone = $1 order by created_at desc limit 5)', [phone]);
+  return [200, { ok: true }];
+}
+async function notices(body) {
+  const phone = cleanPhone(body.phone);
+  if (!phone) return [200, { notices: [] }];
+  const r = await pool.query('update notices set seen = true where phone = $1 and not seen returning by_name, by_score, rank, was, at', [phone]);
+  return [200, { notices: r.rows.sort((a, b) => b.at - a.at).slice(0, 5).map(n => ({ name: n.by_name, score: n.by_score, rank: n.rank, was: n.was })) }];
 }
 
 const sign = s => crypto.createHmac('sha256', SECRET).update(s).digest('hex').slice(0, 32);
@@ -69,6 +118,8 @@ async function submit(body) {
   if (!plausible(score, hops, (Date.now() - tok.started) / 1000)) return [400, { error: 'score' }];
   const used = await pool.query('insert into used_runs (nonce) values ($1) on conflict do nothing', [tok.nonce]);
   if (!used.rowCount) return [409, { error: 'used' }];
+  const before = phone === TEST_PHONE ? [] : (await pool.query('select phone, name, best, best_at from players where best > 0 order by best desc, best_at asc limit 3')).rows;
+  const was = await pool.query('select best from players where phone = $1', [phone]), oldBest = was.rowCount ? was.rows[0].best : 0;
   const r = await pool.query(`insert into players (phone, name, best, best_hops, games, best_at) values ($1,$2,$3,$4,1,now())
     on conflict (phone) do update set name = excluded.name, games = players.games + 1, updated_at = now(),
       best_hops = case when excluded.best > players.best then excluded.best_hops else players.best_hops end,
@@ -76,6 +127,7 @@ async function submit(body) {
       best = greatest(players.best, excluded.best)
     returning best, best_at`, [phone, name, score, hops]);
   const me = r.rows[0];
+  if (me.best > oldBest && before.length) overtaken(before, phone, name, me.best).catch(e => console.error('alerts failed', e.message));
   const rank = await pool.query('select count(*)::int + 1 as rank from players where best > $1 or (best = $1 and best_at < $2)', [me.best, me.best_at]);
   return [200, Object.assign({ best: me.best, rank: rank.rows[0].rank }, await board())];
 }
@@ -113,6 +165,9 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/api/board') return json(200, await board());
     if (req.method === 'POST' && url.pathname === '/api/start') return json(200, { token: newToken(), open: Date.now() < ENDS_AT.getTime() });
     if (req.method === 'POST' && url.pathname === '/api/score') { const [c, o] = await submit(await readBody(req)); return json(c, o); }
+    if (req.method === 'GET' && url.pathname === '/api/push/key') return json(200, { key: VAPID ? VAPID.publicKey : null });
+    if (req.method === 'POST' && url.pathname === '/api/push/sub') { const [c, o] = await subscribe(await readBody(req)); return json(c, o); }
+    if (req.method === 'POST' && url.pathname === '/api/notices') { const [c, o] = await notices(await readBody(req)); return json(c, o); }
     if (req.method === 'GET' && url.pathname === '/admin') {
       const k = url.searchParams.get('key') || '';
       if (!keyOk(k)) return json(403, { error: 'forbidden' });
