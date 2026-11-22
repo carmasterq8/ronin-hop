@@ -160,6 +160,17 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
 .fighter[aria-pressed="true"]{border-color:var(--accent);background:#fff;box-shadow:0 3px 0 var(--accent)}
 .fighter[aria-pressed="true"] img{border-color:var(--accent)}
 .fighter:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+#introCard{position:absolute;left:50%;top:12%;transform:translate(-50%,-10px);opacity:0;pointer-events:none;z-index:4;
+  display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;color:var(--ink);transition:opacity .3s,transform .3s}
+#introCard.show{opacity:1;transform:translate(-50%,0)}
+#introCard small{font:600 13px var(--body);letter-spacing:.04em;background:var(--ic);color:#fff;padding:4px 12px;border-radius:999px;white-space:nowrap}
+#introCard strong{font:800 44px/1 var(--display);text-transform:uppercase;letter-spacing:.01em;color:var(--ic);text-shadow:0 3px 0 #fff,0 0 18px rgba(255,255,255,.8);margin-top:6px}
+#introCard b{font:800 30px/1.1 'Changa','Noto Kufi Arabic',Tahoma,sans-serif;text-shadow:0 2px 0 #fff}
+#introCard span{font:600 13px var(--body);background:rgba(255,255,255,.85);padding:3px 10px;border-radius:8px;margin-top:4px}
+#app.intro #menu{opacity:0;transform:translateY(40px);pointer-events:none}
+#menu{transition:opacity .35s,transform .35s}
+#app.intro .hud{opacity:0}
+@media (prefers-reduced-motion:reduce){#introCard,#menu{transition:none}}
 
 .sheet{max-height:calc(100% - 32px - env(safe-area-inset-bottom));overflow-y:auto}
 .contest{border:2px dashed var(--ink);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:color-mix(in srgb,var(--accent) 9%,var(--paper))}
@@ -235,6 +246,7 @@ button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
     <button id="mute" type="button" aria-pressed="false">Sound on</button>
   </header>
 
+  <div id="introCard" aria-live="polite"><small id="icTag"></small><strong id="icName"></strong><b id="icAr" lang="ar"></b><span id="icSkill"></span></div>
   <div id="banner" aria-live="polite"><small id="bannerTop">Next world</small><strong id="bannerCity">Temple Roofs</strong></div>
 
   <footer class="passport">
@@ -946,7 +958,7 @@ const FIGHTERS = ['ronin','shizuka','momo'], figG = {};
     hat.position.set(0,.495,-.03); hat.rotation.x = -.42;
     const k = new T.Group(); model.add(k);
     box(k,.02,.36,.02,'#1B1B22',0,.02,0); box(k,.05,.014,.03,'#F2C14E',0,-.165,0,false); box(k,.024,.1,.024,'#3A2A2A',0,-.22,0);
-    k.position.set(-.14,.16,.02); k.rotation.x = 1.15; k.rotation.z = .25;
+    k.position.set(-.14,.16,.02); k.rotation.x = 1.15; k.rotation.z = .25; model.userData.w = k;
   }
 
   // shared girl face: full head, eyes, smile
@@ -988,7 +1000,7 @@ const FIGHTERS = ['ronin','shizuka','momo'], figG = {};
     // twin kunai crossed on the back
     for (const s of [-1,1]) { const k = new T.Group(); model.add(k);
       put(k, new T.ConeGeometry(.022,.13,4), '#C9D1D8', 0,.065,0); box(k,.012,.07,.012,K2,0,-.035,0); put(k, new T.TorusGeometry(.016,.005,6,14), PL, 0,-.08,0);
-      k.position.set(s*.1,.1,-.09); k.rotation.z = s*2.3; k.rotation.x = .2; }
+      k.position.set(s*.1,.1,-.09); k.rotation.z = s*2.3; k.rotation.x = .2; (model.userData.w = model.userData.w || []).push(k); }
   }
 
   // AIDA -> "Momo" the little monkey: white tee, lavender bottom, strawberry-blonde hair up in a messy bun, gold heart, red string, monkey tail and a bo staff
@@ -1015,11 +1027,11 @@ const FIGHTERS = ['ronin','shizuka','momo'], figG = {};
     put(model, ring(.124,.02), RED, 0,.13,0);
     // curly monkey tail
     const pts = [[0,.07,-.12],[.02,.04,-.2],[.08,.07,-.26],[.1,.15,-.25],[.06,.2,-.21],[.02,.17,-.19],[.04,.13,-.2]].map(p => new T.Vector3(...p));
-    put(model, new T.TubeGeometry(new T.CatmullRomCurve3(pts), 40, .016, 8, false), '#8A5A3C', 0,0,0);
+    model.userData.tail = put(model, new T.TubeGeometry(new T.CatmullRomCurve3(pts), 40, .016, 8, false), '#8A5A3C', 0,0,0);
     // bo staff on the back
     const st = new T.Group(); model.add(st);
     cyl(st,.014,.014,.62,10,RED,0,0,0); cyl(st,.018,.018,.05,10,GOLD,0,.3,0); cyl(st,.018,.018,.05,10,GOLD,0,-.3,0);
-    st.position.set(.02,.22,-.13); st.rotation.z = -.95; st.rotation.x = .15;
+    st.position.set(.02,.22,-.13); st.rotation.z = -.95; st.rotation.x = .15; model.userData.w = st;
   }
   const B = { ronin, shizuka, momo };
   for (const id of FIGHTERS) { const g = new T.Group(); model.add(g); B[id](g); g.visible = id === 'ronin'; figG[id] = g; }
@@ -1683,6 +1695,98 @@ function finale(dt){
   if (champT > 9.4) endFinale();
 }
 
+
+/* ---------- fighter intros: name card, signature move and sound ---------- */
+const INTRO = {
+  ronin:   { en:'Ronin', ar:'رونين', tag:'The wandering sword', tagAr:'السيف المتجوّل', skill:'Katana spin · دوران السيف', col:'#B33A3A' },
+  shizuka: { en:'Shizuka', ar:'شيزوكا', tag:'The silent one', tagAr:'القاتلة الصامتة', skill:'Shadow step · twin kunai · خطوة الظل', col:'#6B3FA0' },
+  momo:    { en:'Momo', ar:'مومو', tag:'The little monkey', tagAr:'القردة الصغيرة', skill:'Monkey flip · bo staff · قفزة القرد', col:'#D23A2E' },
+};
+const ID = 2.8;                 // intro length in seconds
+let intro = null, focus = 0;
+const lerpV = (o, a, b, u) => o.set(a.x+(b.x-a.x)*u, a.y+(b.y-a.y)*u, a.z+(b.z-a.z)*u);
+const easeIO = u => { u = Math.max(0, Math.min(1, u)); return u*u*(3-2*u); };
+const seg = (t, a, b) => Math.max(0, Math.min(1, (t-a)/(b-a)));
+function snap(o){ return { p:o.position.clone(), r:o.rotation.clone(), s:o.scale.clone() }; }
+function restore(o, b){ o.position.copy(b.p); o.rotation.copy(b.r); o.scale.copy(b.s); o.visible = true; }
+function startIntro(id){
+  if (intro) endIntro();
+  if (state !== 'menu') return;
+  const G = figG[id], w = G.userData.w, ws = Array.isArray(w) ? w : w ? [w] : [];
+  intro = { id, t:0, G, ws, base:snap(G), wbase:ws.map(snap), tail:G.userData.tail, fired:{} };
+  const c = INTRO[id];
+  $('icName').textContent = c.en; $('icAr').textContent = c.ar; $('icTag').textContent = c.tag + ' · ' + c.tagAr; $('icSkill').textContent = c.skill;
+  $('introCard').style.setProperty('--ic', c.col);
+  const ic = $('introCard'); ic.classList.remove('show'); void ic.offsetWidth; ic.classList.add('show');
+  app.classList.add('intro');
+  blip(392,.12,'triangle',.16); blip(587,.12,'triangle',.14,.07); blip(784,.2,'triangle',.14,.14,0,true);
+}
+function endIntro(){
+  if (!intro) return;
+  restore(intro.G, intro.base); intro.ws.forEach((w, k) => restore(w, intro.wbase[k])); if (intro.tail) intro.tail.rotation.set(0,0,0);
+  intro = null; app.classList.remove('intro'); $('introCard').classList.remove('show');
+}
+function puff(n, cols, y0){
+  if (reduce) return;
+  for (let i=0;i<n;i++) { const a = rnd(0,6.28), sp = rnd(.5,1.2);
+    part(GEO.puff, pick(cols), p.x+Math.cos(a)*.12, p.y+(y0||.3)+rnd(-.2,.3), p.z+Math.sin(a)*.12, { vx:Math.cos(a)*sp, vz:Math.sin(a)*sp, vy:rnd(.1,.6), life:rnd(.45,.7), grow:3, op:.85 }); }
+}
+function slashArc(col){
+  if (reduce) return;
+  const r = part(GEO.ring, col, p.x, p.y+.55, p.z, { life:.35, ring:1.9, op:.9 }); r.rotation.x = -Math.PI/2; r.scale.setScalar(.25);
+}
+function chirp(t0){                        // a little monkey call: two rising hoots and a squeak
+  [[520,880,.13,0],[560,940,.13,.16],[900,1500,.09,.34]].forEach(([a,b,d,w]) => blip(a,d,'sine',.22,t0+w,b));
+}
+function runIntro(dt){
+  const I = intro; I.t += dt; const t = I.t, G = I.G, B = I.base;
+  const once = (k, at, fn) => { if (!I.fired[k] && t >= at) { I.fired[k] = true; fn(); } };
+  // turn to face the camera at the start, back at the end
+  const face = Math.atan2(CAM_DIR.x, CAM_DIR.z) - yawG.rotation.y;
+  const turn = easeIO(seg(t,0,.3)) * (1-easeIO(seg(t,ID-.35,ID)));
+  G.position.copy(B.p); G.rotation.set(B.r.x, B.r.y + face*turn, B.r.z); G.scale.copy(B.s); G.visible = true;
+  I.ws.forEach((w, k) => { w.position.copy(I.wbase[k].p); w.rotation.copy(I.wbase[k].r); w.visible = true; });
+  if (I.id === 'ronin') {
+    const k = I.ws[0], held = easeIO(seg(t,.35,.55)) * (1-easeIO(seg(t,2.25,2.5)));
+    lerpV(k.position, I.wbase[0].p, new T.Vector3(.17,.2,.12), held);
+    k.rotation.set(I.wbase[0].r.x + (1.45-I.wbase[0].r.x)*held, 0, I.wbase[0].r.z + (-.5-I.wbase[0].r.z)*held);
+    const spin = easeIO(seg(t,.65,1.45)); G.rotation.y += spin*Math.PI*4;
+    G.position.y = B.p.y + Math.sin(seg(t,.65,1.45)*Math.PI)*.16;
+    const cut = seg(t,1.6,1.85); if (cut > 0 && cut < 1) k.rotation.z = -.5 - Math.sin(cut*Math.PI)*1.6;
+    once('a',.35,() => { whoosh(.25,1800,6000,.12); blip(2400,.35,'triangle',.07,0,3200,true); });
+    once('b',.7,() => { whoosh(.6,500,3000,.22); slashArc('#FFFFFF'); });
+    once('c',1.05,() => slashArc('#F2EDE2'));
+    once('d',1.6,() => { whoosh(.18,4000,900,.2); blip(1900,.4,'triangle',.08,0,2600,true); slashArc('#B33A3A'); sparkle(10,['#FFFFFF','#F2C14E','#B33A3A']); });
+    once('e',2.3,() => blip(220,.08,'square',.06));
+  } else if (I.id === 'shizuka') {
+    // vanish in smoke, reappear with a backflip, twin kunai orbit and fly back home
+    const gone = t > .55 && t < 1.05;
+    G.visible = !gone; if (t >= 1.05 && t < 1.25) G.scale.setScalar(easeIO(seg(t,1.05,1.25)));
+    const flip = seg(t,1.1,1.6); G.rotation.x = -flip*Math.PI*2; G.position.y = B.p.y + Math.sin(flip*Math.PI)*.3;
+    const orb = seg(t,1.55,2.35);
+    I.ws.forEach((w, k) => { if (orb > 0 && orb < 1) { const a = orb*Math.PI*4 + k*Math.PI, R = .36*Math.sin(orb*Math.PI);
+      w.position.set(Math.cos(a)*R, .3+Math.sin(orb*Math.PI)*.12, Math.sin(a)*R); w.rotation.set(Math.PI/2, 0, -a); w.scale.setScalar(1+.8*Math.sin(orb*Math.PI)); } else w.scale.setScalar(1); });
+    once('a',.5,() => { puff(14,['#3B3448','#6B3FA0','#8A8197'],.3); whoosh(.5,300,1200,.2); blip(110,.4,'sine',.18,0,55); });
+    once('b',1.02,() => { puff(12,['#3B3448','#6B3FA0','#8A8197'],.35); whoosh(.35,2200,500,.16); });
+    once('c',1.55,() => { whoosh(.7,900,4200,.14); blip(1700,.06,'square',.05); blip(2100,.06,'square',.05,.1); });
+    once('d',2.3,() => { blip(2600,.05,'triangle',.1); blip(3100,.05,'triangle',.1,.08); sparkle(8,['#6B3FA0','#FFFFFF']); });
+  } else {
+    // double monkey flip with the bo staff spinning, tail wag, landing bounce
+    const up = seg(t,.45,1.45), H = Math.sin(up*Math.PI)*.42;
+    G.position.y = B.p.y + H; G.rotation.x = -easeIO(up)*Math.PI*4;
+    const st = I.ws[0]; if (up > 0 && up < 1) { st.rotation.z = I.wbase[0].r.z + up*Math.PI*6; }
+    const twirl = seg(t,1.75,2.4); if (twirl > 0 && twirl < 1) { st.position.set(.16,.24,.1); st.rotation.set(Math.PI/2, twirl*Math.PI*6, 0); }
+    if (I.tail) I.tail.rotation.y = Math.sin(t*14)*.35*(t < ID-.3 ? 1 : 0);
+    const land = seg(t,1.45,1.75); if (land > 0 && land < 1) { const k = .3*Math.sin(land*Math.PI*2)*(1-land); G.scale.set(B.s.x*(1+k*.6), B.s.y*(1-k), B.s.z*(1+k*.6)); }
+    once('a',.3,() => chirp(0));
+    once('b',.45,() => { whoosh(.9,600,3800,.2); dust(8); });
+    once('c',1.45,() => { blip(160,.18,'sine',.25,0,90); dust(10); sparkle(8,['#F2C14E','#D23A2E','#FFFFFF']); });
+    once('d',1.75,() => { whoosh(.6,800,2600,.15); chirp(.25); });
+  }
+  focus = easeIO(seg(t,0,.35)) * (1-easeIO(seg(t,ID-.4,ID)));
+  if (t >= ID) endIntro();
+}
+
 /* ---------- mid-air slash (trial: world I only) ---------- */
 const SLASH_WORLD = 0, REACH = .85;
 let fruit = null, slices = 0;
@@ -1842,7 +1946,7 @@ function startGame(){
   blip(523.25,.18,'triangle',.18,0,0,true); blip(783.99,.24,'triangle',.18,.1,0,true);
 }
 
-cvs.addEventListener('pointerdown', e => { e.preventDefault(); press(); });
+cvs.addEventListener('pointerdown', e => { e.preventDefault(); if (intro) { endIntro(); return; } press(); });
 window.addEventListener('pointerup', release);
 window.addEventListener('pointercancel', release);
 window.addEventListener('blur', release);
@@ -1866,6 +1970,7 @@ window.addEventListener('resize', resize);
 const cA = new T.Color(), cB = new T.Color();
 const mixHex = (a,b,t) => '#'+cA.set(a).lerp(cB.set(b),t).getHexString();
 function update(dt){
+  if (intro) { if (state !== 'menu') endIntro(); else runIntro(dt); } else focus = Math.max(0, focus - dt*3);
   time += dt;
   if (fruit) { fruit.t += dt; fruit.g.position.y = fruit.y + Math.sin(fruit.t*3)*.12; fruit.g.rotation.y += dt*1.5; fruit.g.scale.setScalar(Math.max(.001, reduce ? 1 : backOut(Math.min(1, fruit.t/.35)))); }
   anchor += (((state==='menu'||state==='over') ? .42 : .56)-anchor)*(1-Math.exp(-dt*5));
@@ -1957,6 +2062,11 @@ function update(dt){
   if (shake > .003) { camera.translateX(Math.sin(time*71)*shake); camera.translateY(Math.cos(time*83)*shake); shake *= Math.exp(-dt*9); }
   camera.translateY(VH*(anchor-.5));
   camera.updateMatrixWorld();
+  if (focus > .001) {                       // fighter intro: zoom in and centre on the fighter
+    const v = new T.Vector3(p.x, p.y+.62, p.z).applyMatrix4(camera.matrixWorldInverse);
+    camera.translateX(v.x*focus); camera.translateY((v.y-.12)*focus);
+    camera.zoom = 1 + 2.3*focus; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+  } else if (camera.zoom !== 1) { camera.zoom = 1; camera.updateProjectionMatrix(); }
   sun.position.set(cam.x-13.5, 15, cam.z+4.5); sun.target.position.set(cam.x, 0, cam.z);
   ground.position.set(cam.x, 0, cam.z);
 
@@ -2204,7 +2314,7 @@ function start(data){
   setFighter(fid);
   document.querySelectorAll('.fighter').forEach(b => {
     for (const ev of ['pointerdown','touchstart','mousedown']) b.addEventListener(ev, e => e.stopPropagation(), { passive:true });
-    b.addEventListener('click', e => { e.stopPropagation(); setFighter(b.dataset.f); initAudio(); blip(620,.12,'triangle',.16); blip(930,.14,'triangle',.12,.06); });
+    b.addEventListener('click', e => { e.stopPropagation(); setFighter(b.dataset.f); initAudio(); startIntro(b.dataset.f); });
   });
   if (data && data.muted) { muted = true; $('mute').textContent = 'Sound off'; $('mute').setAttribute('aria-pressed','true'); }
   COUNT.device(); CONTEST.init(); HOME.init();
