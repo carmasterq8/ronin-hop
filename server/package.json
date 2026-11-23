@@ -4,7 +4,15 @@
   "private": true,
   "description": "Score server for the Ronin Hop contest",
   "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=20" },
-  "dependencies": { "pg": "^8.13.1", "web-push": "^3.6.7" }
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "pg": "^8.13.1",
+    "web-push": "^3.6.7",
+    "ws": "^8.23.0"
+  }
 }

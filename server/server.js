@@ -3,6 +3,7 @@
 const http = require('http');
 const crypto = require('crypto');
 const { Pool } = require('pg');
+let WSS = null; try { WSS = require('ws').WebSocketServer; } catch (e) { console.error('ws missing: live challenges are off'); }
 let webpush = null; try { webpush = require('web-push'); } catch (e) { console.error('web-push missing: record alerts are off'); }
 
 const PORT = process.env.PORT || 10000;
@@ -31,6 +32,12 @@ async function migrate() {
   await pool.query(`create table if not exists notices (id bigserial primary key, phone text not null, by_name text not null, by_score integer not null,
     rank integer not null, was integer not null, at timestamptz not null default now(), seen boolean not null default false)`);
   await pool.query(`create index if not exists notices_phone on notices (phone) where not seen`);
+  // kids version: a nickname and a recovery code only, no personal data
+  await pool.query(`create table if not exists kids (handle text primary key, name text not null, code_hash text not null, best integer not null default 0,
+    best_hops integer not null default 0, games integer not null default 0, best_at timestamptz, week text not null default '', week_best integer not null default 0,
+    week_at timestamptz, created_at timestamptz not null default now())`);
+  await pool.query(`create index if not exists kids_rank on kids (best desc, best_at asc)`);
+  await pool.query(`create index if not exists kids_week on kids (week, week_best desc, week_at asc)`);
   await pool.query('delete from push_subs where phone = $1', [TEST_PHONE]); await pool.query('delete from notices where phone = $1', [TEST_PHONE]);
   if (webpush) {
     await pool.query('insert into settings (k, v) values ($1, $2) on conflict do nothing', ['vapid', JSON.stringify(webpush.generateVAPIDKeys())]);
@@ -132,6 +139,66 @@ async function submit(body) {
   return [200, Object.assign({ best: me.best, rank: rank.rows[0].rank }, await board())];
 }
 
+/* ---------- kids version: nickname + recovery code, nickname-only boards ---------- */
+const BAD = /(fuck|shit|bitch|sexy|porn|nigg|dick|pussy|asshole|sharmo|kalb|منيك|شرموط|قحب|نيك|خول|حمار|كلب|طيز)/i;
+const cleanNick = s => String(s || '').replace(/[٠-٩]/g, c => '٠١٢٣٤٥٦٧٨٩'.indexOf(c)).replace(/[^A-Za-z0-9_\u0600-\u06FF ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+const handleOf = n => n.toLowerCase().replace(/\s/g, '');
+const nickOk = n => n.length >= 3 && !/\d{5,}/.test(n) && !BAD.test(handleOf(n));     // no phone numbers or rude words
+const CODE_CH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const newCode = () => Array.from(crypto.randomBytes(6), b => CODE_CH[b % CODE_CH.length]).join('');
+const codeHash = c => crypto.createHmac('sha256', SECRET + ':kids').update(String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '')).digest('hex');
+function weekKey(d = new Date()) {   // weeks start Sunday, Kuwait time
+  const k = new Date(d.getTime() + 3 * 3600e3); k.setUTCHours(0, 0, 0, 0); k.setUTCDate(k.getUTCDate() - k.getUTCDay()); return k.toISOString().slice(0, 10);
+}
+async function kidsAuth(body) {
+  const name = cleanNick(body.name), r = await pool.query('select * from kids where handle = $1', [handleOf(name)]);
+  if (!r.rowCount) return null;
+  const k = r.rows[0], a = Buffer.from(k.code_hash), b = Buffer.from(codeHash(body.code));
+  return a.length === b.length && crypto.timingSafeEqual(a, b) ? k : null;
+}
+async function kidsBoard() {
+  const wk = weekKey();
+  const [all, week, n] = await Promise.all([
+    pool.query('select name, best from kids where best > 0 order by best desc, best_at asc limit 10'),
+    pool.query('select name, week_best from kids where week = $1 and week_best > 0 order by week_best desc, week_at asc limit 10', [wk]),
+    pool.query('select count(*)::int as n from kids where best > 0')]);
+  return { players: n.rows[0].n, week: wk, all: all.rows.map(r => ({ name: r.name, score: r.best })), weekTop: week.rows.map(r => ({ name: r.name, score: r.week_best })) };
+}
+async function kidsJoin(body, ip) {
+  if (limited('join:' + ip, 6)) return [429, { error: 'slow' }];
+  const name = cleanNick(body.name);
+  if (!nickOk(name)) return [400, { error: 'name' }];
+  const code = newCode();
+  const r = await pool.query('insert into kids (handle, name, code_hash) values ($1,$2,$3) on conflict do nothing', [handleOf(name), name, codeHash(code)]);
+  if (!r.rowCount) return [409, { error: 'taken' }];
+  return [200, { name, code }];
+}
+async function kidsLogin(body, ip) {
+  if (limited('login:' + ip, 10)) return [429, { error: 'slow' }];
+  const k = await kidsAuth(body);
+  return k ? [200, { name: k.name, best: k.best }] : [401, { error: 'code' }];
+}
+async function kidsScore(body) {
+  const k = await kidsAuth(body);
+  if (!k) return [401, { error: 'code' }];
+  const score = Number(body.score), hops = Number(body.hops), tok = readToken(body.token);
+  if (!tok || Date.now() - tok.started > 3 * 3600e3) return [400, { error: 'token' }];
+  if (!plausible(score, hops, (Date.now() - tok.started) / 1000)) return [400, { error: 'score' }];
+  const used = await pool.query('insert into used_runs (nonce) values ($1) on conflict do nothing', [tok.nonce]);
+  if (!used.rowCount) return [409, { error: 'used' }];
+  const wk = weekKey();
+  const r = await pool.query(`update kids set games = games + 1,
+      best_hops = case when $2 > best then $3 else best_hops end, best_at = case when $2 > best then now() else best_at end, best = greatest(best, $2),
+      week_best = case when week = $4 then greatest(week_best, $2) else $2 end,
+      week_at = case when week <> $4 or $2 > week_best then now() else week_at end, week = $4
+    where handle = $1 returning best, best_at, week_best, week_at`, [k.handle, score, hops, wk]);
+  const me = r.rows[0];
+  const [ra, rw] = await Promise.all([
+    pool.query('select count(*)::int + 1 as n from kids where best > $1 or (best = $1 and best_at < $2)', [me.best, me.best_at]),
+    pool.query('select count(*)::int + 1 as n from kids where week = $3 and (week_best > $1 or (week_best = $1 and week_at < $2))', [me.week_best, me.week_at, wk])]);
+  return [200, Object.assign({ best: me.best, weekBest: me.week_best, rank: ra.rows[0].n, weekRank: rw.rows[0].n }, await kidsBoard())];
+}
+
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 async function adminPage(key) {
   const r = await pool.query('select name, phone, best, best_hops, games, best_at from players order by best desc, best_at asc limit 500');
@@ -163,6 +230,10 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/health') return json(200, { ok: true });
     if (limited(ip)) return json(429, { error: 'slow' });
     if (req.method === 'GET' && url.pathname === '/api/board') return json(200, await board());
+    if (req.method === 'GET' && url.pathname === '/api/kids/board') return json(200, await kidsBoard());
+    if (req.method === 'POST' && url.pathname === '/api/kids/join') { const [c, o] = await kidsJoin(await readBody(req), ip); return json(c, o); }
+    if (req.method === 'POST' && url.pathname === '/api/kids/login') { const [c, o] = await kidsLogin(await readBody(req), ip); return json(c, o); }
+    if (req.method === 'POST' && url.pathname === '/api/kids/score') { const [c, o] = await kidsScore(await readBody(req)); return json(c, o); }
     if (req.method === 'POST' && url.pathname === '/api/start') return json(200, { token: newToken(), open: Date.now() < ENDS_AT.getTime() });
     if (req.method === 'POST' && url.pathname === '/api/score') { const [c, o] = await submit(await readBody(req)); return json(c, o); }
     if (req.method === 'GET' && url.pathname === '/api/push/key') return json(200, { key: VAPID ? VAPID.publicKey : null });
@@ -182,6 +253,87 @@ const server = http.createServer(async (req, res) => {
     json(404, { error: 'not found' });
   } catch (e) { console.error(req.method, url.pathname, e.message); json(500, { error: 'server' }); }
 });
+
+/* ---------- live challenges: two players race the same course; the server only pairs them and relays scores ---------- */
+const rooms = new Map();
+const ROOM_CH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const newRoomCode = () => { for (let k = 0; k < 50; k++) { const c = Array.from(crypto.randomBytes(4), b => ROOM_CH[b % ROOM_CH.length]).join(''); if (!rooms.has(c)) return c; } return null; };
+const FIGHTERS = ['ronin', 'shizuka', 'momo'];
+const sendTo = (ws, o) => { try { if (ws.readyState === 1) ws.send(JSON.stringify(o)); } catch (e) {} };
+const roster = room => room.players.map(p => ({ name: p.name, fighter: p.fighter, ready: !!p.ws }));
+function roomGo(room) {
+  room.seed = crypto.randomBytes(4).readUInt32BE(0); room.state = 'race'; room.round++;
+  room.players.forEach(p => { p.score = 0; p.hops = 0; p.done = false; p.again = false; });
+  room.players.forEach((p, i) => sendTo(p.ws, { t: 'go', seed: room.seed, round: room.round, in: 3600, you: i, players: roster(room) }));
+}
+function roomResult(room) {
+  room.state = 'done';
+  const sc = room.players.map(p => ({ name: p.name, fighter: p.fighter, score: p.score, hops: p.hops }));
+  room.players.forEach((p, i) => sendTo(p.ws, { t: 'result', you: i, scores: sc }));
+}
+function attachDuel(server) {
+  if (!WSS) return;
+  const wss = new WSS({ noServer: true, maxPayload: 2048 });
+  server.on('upgrade', (req, socket, head) => {
+    const url = new URL(req.url, 'http://x'), origin = req.headers.origin;
+    if (url.pathname !== '/duel' || (origin && !ORIGINS.includes(origin) && !/^http:\/\/localhost(:\d+)?$/.test(origin))) { socket.destroy(); return; }
+    const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    if (limited('ws:' + ip, 20)) { socket.destroy(); return; }
+    wss.handleUpgrade(req, socket, head, ws => duelConn(ws));
+  });
+  setInterval(() => { const now = Date.now();
+    for (const [c, room] of rooms) if (now - room.touched > 30 * 60e3 || !room.players.some(p => p.ws)) { room.players.forEach(p => { try { p.ws && p.ws.close(); } catch (e) {} }); rooms.delete(c); }
+    wss.clients.forEach(ws => { if (ws.alive === false) return ws.terminate(); ws.alive = false; try { ws.ping(); } catch (e) {} });
+  }, 20000);
+}
+function duelConn(ws) {
+  let room = null, me = null, last = 0;
+  ws.alive = true; ws.on('pong', () => { ws.alive = true; });
+  const other = () => room && room.players.find(p => p !== me);
+  ws.on('message', raw => {
+    let m; try { m = JSON.parse(String(raw)); } catch (e) { return; }
+    const now = Date.now(); if (room) room.touched = now;
+    const name = cleanName(m.name).slice(0, 16) || 'Player', fighter = FIGHTERS.includes(m.fighter) ? m.fighter : 'ronin';
+    if (m.t === 'create' && !room) {
+      if (rooms.size > 3000) return sendTo(ws, { t: 'error', error: 'busy' });
+      const code = newRoomCode(); if (!code) return sendTo(ws, { t: 'error', error: 'busy' });
+      me = { ws, name, fighter }; room = { code, players: [me], state: 'lobby', round: 0, touched: now }; rooms.set(code, room);
+      return sendTo(ws, { t: 'room', code, you: 0, players: roster(room) });
+    }
+    if (m.t === 'join' && !room) {
+      const r = rooms.get(String(m.code || '').toUpperCase().replace(/[^A-Z0-9]/g, ''));
+      if (!r) return sendTo(ws, { t: 'error', error: 'nocode' });
+      const free = r.players.find(p => !p.ws);
+      if (r.players.length >= 2 && !free) return sendTo(ws, { t: 'error', error: 'full' });
+      room = r; if (free) { me = free; Object.assign(me, { ws, name, fighter }); } else { me = { ws, name, fighter }; r.players.push(me); }
+      room.players.forEach((p, i) => sendTo(p.ws, { t: 'room', code: room.code, you: i, players: roster(room) }));
+      if (room.players.length === 2 && room.players.every(p => p.ws) && room.state === 'lobby') roomGo(room);
+      return;
+    }
+    if (!room || !me) return;
+    if (m.t === 'live' && room.state === 'race' && now - last > 120) {
+      last = now; me.score = Math.max(0, Math.min(1e6, m.score | 0)); me.hops = Math.max(0, Math.min(1e5, m.hops | 0));
+      return sendTo(other() && other().ws, { t: 'peer', score: me.score, hops: me.hops, combo: Math.min(99, m.combo | 0), city: Math.min(9, m.city | 0), perfect: !!m.perfect });
+    }
+    if (m.t === 'over' && room.state === 'race' && !me.done) {
+      me.done = true; me.score = Math.max(0, Math.min(1e6, m.score | 0)); me.hops = Math.max(0, Math.min(1e5, m.hops | 0));
+      sendTo(other() && other().ws, { t: 'peerOver', score: me.score, hops: me.hops });
+      if (room.players.length === 2 && room.players.every(p => p.done || !p.ws)) roomResult(room);
+      return;
+    }
+    if (m.t === 'again' && room.state === 'done') {
+      me.again = true; sendTo(other() && other().ws, { t: 'peerAgain' });
+      if (room.players.length === 2 && room.players.every(p => p.again && p.ws)) roomGo(room);
+    }
+  });
+  ws.on('close', () => {
+    if (!room || !me) return;
+    me.ws = null; const o = other();
+    if (o && o.ws) { sendTo(o.ws, { t: 'left' }); if (room.state === 'race' && o.done) roomResult(room); }
+    if (!room.players.some(p => p.ws)) rooms.delete(room.code);
+  });
+}
+attachDuel(server);
 
 migrate().then(() => server.listen(PORT, () => console.log('contest server on', PORT, 'ends', ENDS_AT.toISOString())))
   .catch(e => { console.error('startup failed', e.message); process.exit(1); });

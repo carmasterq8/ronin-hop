@@ -390,6 +390,81 @@ body{font-family:var(--body)}
 .pop{font-family:var(--display)!important}
 #banner strong,#introCard strong,#champ strong{font-family:var(--display)!important}
 </style>
+<style id="duelCss">
+#duelBtn{position:relative;width:100%;height:48px;margin-top:-2px;border:0;cursor:pointer;color:#FFE9E2;font:600 13px var(--body);white-space:nowrap;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:9px;
+  clip-path:polygon(14px 0,100% 0,calc(100% - 14px) 100%,0 100%);background:linear-gradient(180deg,rgba(216,67,47,.32),rgba(216,67,47,.12));box-shadow:inset 0 0 0 1px rgba(232,108,86,.85)}
+#duelBtn b{font:800 13.5px var(--display);letter-spacing:.08em;text-transform:uppercase;color:#fff}
+#duelBtn .live{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:99px;background:#D8432F;color:#fff;font:700 9.5px var(--body);letter-spacing:.12em}
+#duelBtn .live::before,.dHud .live::before{content:'';width:6px;height:6px;border-radius:50%;background:#fff;animation:dPulse 1.2s infinite}
+@keyframes dPulse{50%{opacity:.25}}
+.dWrap{position:fixed;inset:0;z-index:70;display:flex;align-items:flex-end;justify-content:center;background:rgba(6,5,8,.66);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:0 12px calc(14px + env(safe-area-inset-bottom));animation:dFade .25s ease}
+@keyframes dFade{from{opacity:0}}
+.dSheet{position:relative;width:100%;max-width:460px;padding:22px 18px 16px;border-radius:26px;color:var(--ivory);text-align:center;
+  background:linear-gradient(180deg,rgba(26,22,30,.985),rgba(12,10,14,.995));box-shadow:0 0 0 1px var(--goldl),inset 0 0 0 7px rgba(12,10,14,0),inset 0 0 0 8px rgba(233,194,115,.14),0 24px 60px rgba(0,0,0,.55);animation:dUp .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes dUp{from{transform:translateY(30px);opacity:0}}
+.dSheet .x{position:absolute;right:14px;top:14px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(245,236,220,.08);color:var(--mute);font:600 18px/1 var(--body);cursor:pointer}
+.dK{display:block;color:var(--gold);font:600 10.5px var(--body);letter-spacing:.22em;text-transform:uppercase}
+.dH{margin:6px 0 0;font:800 26px/1.08 var(--display);letter-spacing:-.01em}
+.dAr{margin-top:4px;font:500 14px var(--body);color:var(--mute)}
+.dGo{position:relative;width:100%;height:56px;margin-top:16px;border:0;cursor:pointer;color:#FFF6E8;font:800 15px var(--display);letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:9px;
+  clip-path:polygon(16px 0,100% 0,calc(100% - 16px) 100%,0 100%);background:linear-gradient(180deg,#E65A42 0%,#C7372A 55%,#A82A1E 100%)}
+.dGo small{font:600 13px var(--body);letter-spacing:0;text-transform:none;opacity:.9}
+.dGo:disabled{filter:grayscale(.6) brightness(.8)}
+.dG2{width:100%;height:48px;margin-top:10px;border:0;cursor:pointer;color:var(--ivory);font:600 14px var(--body);display:flex;align-items:center;justify-content:center;gap:8px;
+  clip-path:polygon(12px 0,100% 0,calc(100% - 12px) 100%,0 100%);background:linear-gradient(180deg,rgba(233,194,115,.16),rgba(233,194,115,.05));box-shadow:inset 0 0 0 1px var(--goldl)}
+.dOr{display:flex;align-items:center;gap:10px;margin:16px 0 10px;color:rgba(245,236,220,.45);font:500 11.5px var(--body);letter-spacing:.14em;text-transform:uppercase}.dOr::before,.dOr::after{content:'';flex:1;height:1px;background:rgba(233,194,115,.22)}
+.dRow{display:flex;gap:8px}
+.dIn{flex:1;min-width:0;height:48px;border:0;border-radius:14px;background:rgba(245,236,220,.06);box-shadow:inset 0 0 0 1px rgba(233,194,115,.35);color:var(--ivory);font:600 16px var(--body);padding:0 14px;text-align:center;letter-spacing:.06em}
+.dIn.code{font:800 20px var(--display);letter-spacing:.3em;text-transform:uppercase}
+.dIn::placeholder{color:rgba(245,236,220,.4);letter-spacing:.02em;font:500 14px var(--body)}
+.dBtn{flex:none;height:48px;padding:0 18px;border:0;border-radius:14px;cursor:pointer;background:linear-gradient(180deg,#F1D18C,#C9963F);color:#1A1206;font:700 14px var(--body)}
+.dErr{margin-top:10px;color:#FF9A8A;font:500 13px var(--body)}
+.dNote{margin-top:12px;color:rgba(245,236,220,.5);font:400 11.5px/1.45 var(--body)}
+.dCode{display:inline-flex;margin:16px auto 4px;padding:10px 22px 10px 28px;border-radius:16px;font:800 38px/1 var(--display);letter-spacing:.28em;color:var(--gold);background:rgba(233,194,115,.1);box-shadow:inset 0 0 0 1px var(--goldl)}
+.dShare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.dShare button{height:46px;border:0;border-radius:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;font:700 13.5px var(--body)}
+.dShare .wa{background:#25D366;color:#05230F}.dShare .sn{background:#FFFC00;color:#000}.dShare .cp{grid-column:1/-1;background:rgba(245,236,220,.07);color:var(--ivory);box-shadow:inset 0 0 0 1px rgba(233,194,115,.35)}
+.dVs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-top:18px}
+.dP{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.dAv{width:62px;height:62px;border-radius:50%;background:#FFF7E8 center/cover;box-shadow:0 0 0 3px var(--gold),0 6px 16px rgba(0,0,0,.35)}
+.dAv.them{box-shadow:0 0 0 3px #D8432F,0 6px 16px rgba(0,0,0,.35)}
+.dAv.wait{background:rgba(245,236,220,.06);box-shadow:0 0 0 2px rgba(245,236,220,.25);display:grid;place-items:center;font:800 22px var(--display);color:rgba(245,236,220,.35)}
+.dP b{font:700 14px var(--body);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dP small{font:500 11.5px var(--body);color:var(--mute)}
+.dP small.ok{color:#7FE3A8}
+.dVsX{font:800 26px var(--display);color:#D8432F;padding:0 10px}
+.dDots{display:flex;gap:6px;justify-content:center;margin-top:14px}.dDots i{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:dDot 1.2s infinite}.dDots i:nth-child(2){animation-delay:.2s}.dDots i:nth-child(3){animation-delay:.4s}
+@keyframes dDot{0%,100%{opacity:.25}50%{opacity:1}}
+.dCount{position:fixed;inset:0;z-index:75;display:grid;place-items:center;pointer-events:none;background:radial-gradient(circle at 50% 45%,rgba(12,10,14,.35),rgba(12,10,14,.7))}
+.dCount .n{position:relative;width:210px;height:210px;display:grid;place-items:center;font:800 110px/1 var(--display);color:var(--ivory);text-shadow:0 6px 30px rgba(0,0,0,.5)}
+.dCount .n svg{position:absolute;inset:0}
+.dCount .n.pop{animation:dPop .9s cubic-bezier(.2,.8,.2,1)}
+@keyframes dPop{0%{transform:scale(1.6);opacity:0}25%{transform:scale(1);opacity:1}85%{opacity:1}100%{transform:scale(.9);opacity:0}}
+.dCount .vs{position:absolute;top:calc(22% + env(safe-area-inset-top));left:0;right:0;display:flex;justify-content:center;align-items:center;gap:16px;font:700 15px var(--body);color:var(--ivory)}
+.dCount .vs .dAv{width:50px;height:50px}
+.dHud{position:fixed;left:12px;right:12px;top:calc(150px + env(safe-area-inset-top));z-index:6;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;pointer-events:none}
+.dPill{display:flex;align-items:center;gap:9px;min-width:0;padding:6px 12px 6px 6px;border-radius:16px;background:rgba(12,10,14,.84);box-shadow:inset 0 0 0 1px var(--goldl)}
+.dPill.them{flex-direction:row-reverse;padding:6px 6px 6px 12px;box-shadow:inset 0 0 0 1px rgba(232,108,86,.8)}
+.dPill .dAv{width:34px;height:34px;flex:none;box-shadow:0 0 0 2px var(--gold)}.dPill.them .dAv{box-shadow:0 0 0 2px #D8432F}
+.dPill div{min-width:0}.dPill.them div{text-align:right}
+.dPill b{display:block;font:800 22px/1 var(--display);color:var(--ivory)}
+.dPill span{display:block;font:500 10.5px var(--body);color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dPill.lead{box-shadow:inset 0 0 0 1.5px var(--gold),0 0 18px rgba(233,194,115,.35)}
+.dPill.out{opacity:.6}
+.dHud .live{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:99px;background:#D8432F;color:#fff;font:700 10px var(--body);letter-spacing:.14em}
+.dToast{position:fixed;left:50%;top:calc(206px + env(safe-area-inset-top));z-index:6;transform:translateX(-50%);display:flex;align-items:center;gap:9px;max-width:calc(100% - 40px);padding:8px 14px 8px 8px;border-radius:14px;
+  background:rgba(12,10,14,.9);box-shadow:inset 0 0 0 1px rgba(232,108,86,.7);font:500 13px var(--body);color:var(--ivory);pointer-events:none;animation:dToast 2.4s ease forwards}
+.dToast .dAv{width:26px;height:26px;flex:none;box-shadow:0 0 0 2px #D8432F}
+@keyframes dToast{0%{opacity:0;transform:translate(-50%,-8px)}12%,80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+.dRes h1{margin:6px 0 0;font:800 42px/1 var(--display);letter-spacing:-.01em;color:var(--gold);text-shadow:0 4px 24px rgba(233,194,115,.25)}
+.dRes h1.lose{color:var(--ivory)}
+.dScores{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-top:18px}
+.dScores .dP strong{font:800 46px/1 var(--display);margin-top:4px}
+.dScores .dP.low strong{opacity:.55}
+.dScores .crown{position:absolute;margin-top:-14px;font-size:18px}
+.dLive{display:inline-flex;align-items:center;gap:6px;margin-top:4px;font:500 12px var(--body);color:#FFB3A6}
+@media (max-height:700px){.dHud{top:calc(136px + env(safe-area-inset-top))}.dAv{width:52px;height:52px}.dScores .dP strong{font-size:38px}.dRes h1{font-size:34px}.dCode{font-size:32px}}
+</style>
 </head>
 <body>
 <div id="app">
@@ -1773,10 +1848,10 @@ function makeBlock(i, kind, x, z, alongX){
   const adKey = isBrand ? 'Building: '+kind : sp && !sp.free ? sp.label||sp.name : null;
   if (adKey) (runAds[adKey] = runAds[adKey] || [0,0])[0]++;
   const mg = new T.Group(); mg.position.y = PL; g.add(mg);
-  const info = BUILD[kind](mg, w, alongX, kind==='billboard' ? sp : null);
+  const info = looks(() => BUILD[kind](mg, w, alongX, kind==='billboard' ? sp : null));
   if (adKey && kind==='teahouse') info.dwell = (sp.label||sp.name)+' tea';
   const cracked = !sp && !isBrand && i >= 2 && i % HOPS !== 0 && !FIXED.includes(kind) && Math.random() < COLLAPSE_RATE+.08*tg;
-  if (info.brand) (info.kit ? kitTower : brandTower)(g, info); else tower(g, info, info.summit ? SUMMIT_TOWER : CITIES[city], sp, kind==='billboard', cracked);
+  looks(() => { if (info.brand) (info.kit ? kitTower : brandTower)(g, info); else tower(g, info, info.summit ? SUMMIT_TOWER : CITIES[city], sp, kind==='billboard', cracked); });
   info.h += PL;
   const dot = new T.Group(); dot.position.y = info.h+.006; dot.rotation.x = -Math.PI/2; g.add(dot);
   put(dot,new T.CircleGeometry(.12,24),mat('#FFFFFF',true),0,0,0,false);
@@ -1793,7 +1868,17 @@ function makeBlock(i, kind, x, z, alongX){
     ax:alongX?1:0, az:alongX?0:1, phase:rnd(0,6), spd:1.6+d*1.5+tg*.8, crLim:2.2-.5*Math.min(1,tg), age:0, land:9, sq:1 }, info);
 }
 const half = (b, alongX) => b.shape==='cyl' ? b.r : alongX ? b.wx : b.wz;
-function spawnNext(){
+// live challenges: both players get the same course from a shared seed (only the course uses it; effects stay random)
+let COURSE = null;
+function seeded(seed){ let s = seed >>> 0; return () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const REAL_RANDOM = Math.random;
+// each block gets its own stream, so the courses match even if one phone has drawn more decoration than the other
+function onCourse(f, i){ if (COURSE == null) return f(); const r = Math.random; Math.random = seeded(COURSE ^ Math.imul(i + 1, 2654435761)); try { return f(); } finally { Math.random = r; } }
+let lookN = 0;
+// building shapes get a second seeded stream, kept apart from the course decisions
+function looks(f){ if (COURSE == null) return f(); const r = Math.random; Math.random = seeded(COURSE ^ 0x5bd1e995 ^ Math.imul(++lookN, 0x9E3779B1)); try { return f(); } finally { Math.random = r; } }
+function spawnNext(){ return onCourse(spawnNext0, blocks[blocks.length-1].i + 1); }
+function spawnNext0(){
   const cur = blocks[blocks.length-1], i = cur.i+1;
   const city = CITIES[cityOf(i)], d = hard(i), tg = tough(i);
   let kind;
@@ -1831,7 +1916,7 @@ function reset(){
   blocks.forEach(b => dispose(b.g)); scenery.forEach(s => dispose(s.g)); parts.forEach(q => { scene.remove(q.m); q.m.material.dispose(); });
   blocks=[]; scenery=[]; parts=[]; fx.textContent=''; killTrail();
   killFruit(); slices=0; hinted={}; slide=null; runAds={}; runCoins=0; score=0; combo=0; topStreak=0; hops=0; cityIdx=0; dirBal=0; chargeT=0; jump=null; fall=null; wob=0; dwellT=0; squashT=9;
-  const start = makeBlock(0,'stone',0,0,true); start.age = 2; start.wx = start.wz = Math.max(start.wx,.74);
+  const start = onCourse(() => makeBlock(0,'stone',0,0,true), 0); start.age = 2; start.wx = start.wz = Math.max(start.wx,.74);
   blocks.push(start); spawnNext();
   const nx = blocks[1]; nx.age = 2;
   scenery.forEach(s => { s.age = 1; });
@@ -2341,6 +2426,18 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => { if (e.code==='Space' || e.code==='ArrowUp') release(); });
 $('startBtn').addEventListener('click', () => { if (CONTEST.ready()) startGame(); });
+// hooks for the live challenge module
+window.RH = {
+  duel(seed){ COURSE = seed >>> 0; lookN = 0; brandTurn = 0; freeTurn = 0; sponsorTurn = 0; },
+  solo(){ COURSE = null; },
+  get duelOn(){ return COURSE != null; },
+  get aimMs(){ const c = blocks[blocks.length-2], nx = blocks[blocks.length-1]; return Math.hypot(nx.x-p.x, nx.z-p.z)/(RATE*(c && c.boost?1.45:1))*1000; },
+  get charge(){ return chargeT; },
+  get course(){ return blocks.map(b => b.kind + ':' + b.x.toFixed(2) + ',' + b.z.toFixed(2)).join(' '); },
+  start(){ startGame(); },
+  get state(){ return state; }, get score(){ return score; }, get hops(){ return hops; }, get combo(){ return combo; }, get city(){ return cityIdx; },
+  get fighter(){ try { return localStorage.getItem('ronin.fighter') || 'ronin'; } catch (e) { return 'ronin'; } },
+};
 $('againBtn').addEventListener('click', startGame);
 $('mute').addEventListener('click', () => {
   muted = !muted; initAudio();
@@ -2812,6 +2909,161 @@ if (hot && hot.ready) hot.ready(start); else start((hot && hot.data) || {});
     };
     new MutationObserver(build).observe(top, { childList:true }); build();
   }
+})();
+
+/* ---------- live challenge: invite a friend, race the same course, see each other's score live ---------- */
+(function(){
+  const $ = id => document.getElementById(id), app = $('app');
+  if (!window.RH) return;
+  const WS = window.DUEL_WS || (['play.muriegarage.com', 'carmasterq8.github.io'].includes(location.hostname) ? 'wss://ronin-hop-contest-api.onrender.com/duel' : '');
+  const SITE = 'https://play.muriegarage.com/';
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' })[c]);
+  const ar = t => /[؀-ۿ]/.test(t) ? ' dir="rtl"' : '';
+  const stop = el => { for (const ev of ['pointerdown','touchstart','mousedown','keydown']) el.addEventListener(ev, e => e.stopPropagation(), { passive:true }); };
+  const face = f => { const im = document.querySelector(`.fighter[data-f="${f}"] img`); return im ? im.src : ''; };
+  const av = (f, cls) => `<span class="dAv ${cls||''}" style="background-image:url('${face(f)}')"></span>`;
+  const myName = () => { try { const p = JSON.parse(localStorage.getItem('ronin.player') || 'null'); if (p && p.name) return p.name; return localStorage.getItem('ronin.duelName') || ''; } catch (e) { return ''; } };
+  const SV = { swords:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M9.5 17.5 21 6V3h-3L6.5 14.5M11 19l-6-6M8 16l-4 4M5 21l-2-2"/></svg>',
+    wa:'<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-3.3-.8-2.8-1.1-4.5-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.4.1.1.1.7-.1 1.3z"/></svg>',
+    share:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>',
+    link:'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>' };
+  const ENSO = '<svg viewBox="0 0 200 200"><g filter="url(#skBrush)"><path d="M152 46 A70 70 0 1 0 172 112" fill="none" stroke="#E9C273" stroke-width="16" stroke-linecap="round"/></g></svg>';
+
+  let ws = null, room = null, you = 0, players = [], phase = 'off', peer = { score:0, hops:0, done:false }, poll = 0, sent = { score:-1 }, lastCombo = 0, wrap = null, hud = null, result = null, iAgain = false, peerAgain = false, leftFlag = false;
+
+  // menu button
+  const btn = document.createElement('button'); btn.type = 'button'; btn.id = 'duelBtn';
+  btn.innerHTML = `${SV.swords}<b>Live challenge</b><span lang="ar">· تحدي مباشر</span><span class="live">LIVE</span>`;
+  $('startBtn').after(btn); stop(btn);
+  btn.addEventListener('click', () => openHome());
+
+  function sheet(html, closable = true) {
+    close();
+    wrap = document.createElement('div'); wrap.className = 'dWrap';
+    wrap.innerHTML = `<div class="dSheet">${closable ? '<button class="x" type="button" aria-label="Close">✕</button>' : ''}${html}</div>`;
+    document.body.appendChild(wrap); stop(wrap);
+    const x = wrap.querySelector('.x'); if (x) x.onclick = () => leave();
+    return wrap;
+  }
+  function close(){ if (wrap) { wrap.remove(); wrap = null; } }
+  function nameField(){ return myName() ? '' : `<input class="dIn" id="dName" maxlength="16" placeholder="Your name · اسمك" autocomplete="off" style="margin-top:16px;width:100%">`; }
+  function takeName(){ const el = $('dName'); if (!el) return myName(); const n = el.value.trim(); if (n.length < 2) return ''; try { localStorage.setItem('ronin.duelName', n); } catch (e) {} return n; }
+
+  function openHome(err, code){
+    phase = 'home';
+    sheet(`<span class="dK">Live challenge · تحدي مباشر</span><h2 class="dH">Race a friend, live</h2><div class="dAr">تحدَّ صديقك الآن على نفس المسار</div>
+      ${nameField()}
+      <button class="dGo" id="dCreate" type="button">${SV.swords} Create a challenge <small lang="ar">· أنشئ تحدي</small></button>
+      <div class="dOr">or join · أو انضم</div>
+      <div class="dRow"><input class="dIn code" id="dCode" maxlength="4" placeholder="Code · الرمز" autocomplete="off" value="${esc(code||'')}"><button class="dBtn" id="dJoin" type="button">Join · دخول</button></div>
+      ${err ? `<div class="dErr">${err}</div>` : ''}
+      <div class="dNote">You both get the same course. Highest score wins.<br><span dir="rtl">نفس المسار للاثنين، والأعلى نتيجة يفوز.</span></div>`);
+    $('dCreate').onclick = () => { const n = takeName(); if (!n) return openHome('Type your name first. · اكتب اسمك'); connect({ t:'create', name:n, fighter:RH.fighter }); };
+    $('dJoin').onclick = () => { const n = takeName(), c = $('dCode').value.trim().toUpperCase(); if (!n) return openHome('Type your name first. · اكتب اسمك', c); if (c.length !== 4) return openHome('The code has 4 letters. · الرمز ٤ أحرف', c); connect({ t:'join', code:c, name:n, fighter:RH.fighter }); };
+  }
+  function connect(first){
+    if (!WS) return openHome('Live challenges work on play.muriegarage.com');
+    if (ws) try { ws.close(); } catch (e) {}
+    sheet(`<span class="dK">Live challenge</span><h2 class="dH">Connecting…</h2><div class="dDots"><i></i><i></i><i></i></div>`);
+    leftFlag = false;
+    ws = new WebSocket(WS);
+    const t = setTimeout(() => { if (ws && ws.readyState !== 1) { try { ws.close(); } catch (e) {} openHome('Could not connect. Try again. · تعذر الاتصال'); } }, 9000);
+    ws.onopen = () => { clearTimeout(t); ws.send(JSON.stringify(first)); };
+    ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; } onMsg(m); };
+    ws.onclose = () => { clearTimeout(t); if (phase === 'lobby') openHome('Connection lost. · انقطع الاتصال'); };
+  }
+  const link = () => SITE + '?duel=' + room + '&src=duel';
+  const inviteText = () => `⚔️ ${myName()} challenges you to Ronin Hop! Code ${room}\n⚔️ تحداك ${myName()} في رونين هوب! الرمز ${room}\n${link()}`;
+  function lobby(){
+    phase = 'lobby';
+    const me = players[you] || { name: myName(), fighter: RH.fighter }, them = players[1 - you];
+    sheet(`<span class="dK">Live challenge · تحدي مباشر</span><h2 class="dH">${them ? 'Get ready!' : 'Invite a friend'}</h2><div class="dAr">${them ? 'استعد!' : 'أرسل الرمز لصديقك'}</div>
+      <div class="dCode">${room}</div>
+      ${them ? '' : `<div class="dShare"><button class="wa" id="dWa" type="button">${SV.wa} WhatsApp</button><button class="sn" id="dSn" type="button">${SV.share} Snapchat · more</button><button class="cp" id="dCp" type="button">${SV.link} <span id="dCpT">Copy link · نسخ الرابط</span></button></div>`}
+      <div class="dVs"><div class="dP">${av(me.fighter)}<b${ar(me.name)}>${esc(me.name)}</b><small class="ok">Ready ✓</small></div><span class="dVsX">VS</span>
+        <div class="dP">${them ? av(them.fighter, 'them') : '<span class="dAv wait">?</span>'}<b${them ? ar(them.name) : ''} style="${them ? '' : 'color:rgba(245,236,220,.5)'}">${them ? esc(them.name) : 'Waiting…'}</b><small${them ? ' class="ok"' : ''}>${them ? 'Ready ✓' : 'بانتظار صديقك'}</small></div></div>
+      ${them ? '' : '<div class="dDots"><i></i><i></i><i></i></div>'}`);
+    const wa = $('dWa'); if (wa) wa.onclick = () => window.open('https://wa.me/?text=' + encodeURIComponent(inviteText()), '_blank');
+    const sn = $('dSn'); if (sn) sn.onclick = () => { if (navigator.share) navigator.share({ title:'Ronin Hop', text:inviteText(), url:link() }).catch(() => {}); else window.open('https://www.snapchat.com/scan?attachmentUrl=' + encodeURIComponent(link()), '_blank'); };
+    const cp = $('dCp'); if (cp) cp.onclick = () => { (navigator.clipboard ? navigator.clipboard.writeText(inviteText()) : Promise.reject()).then(() => { $('dCpT').textContent = 'Copied! · تم النسخ'; }).catch(() => { $('dCpT').textContent = link(); }); };
+  }
+  function onMsg(m){
+    if (m.t === 'error') { ws && ws.close(); ws = null; return openHome(m.error === 'nocode' ? 'No challenge with that code. · الرمز غير صحيح' : m.error === 'full' ? 'That challenge already has two players. · التحدي ممتلئ' : 'Server busy, try again. · حاول مرة أخرى'); }
+    if (m.t === 'room') { room = m.code; you = m.you; players = m.players; return lobby(); }
+    if (m.t === 'go') { players = m.players; you = m.you; return go(m.seed, m.in); }
+    if (m.t === 'peer') { const before = peer.score; Object.assign(peer, m); drawHud(); if (phase === 'race' && m.perfect && m.combo >= 2) toast(`<b${ar(them().name)}>${esc(them().name)}</b> landed a Perfect ×${m.combo}!`); if (phase === 'over') drawResult(); return; }
+    if (m.t === 'peerOver') { peer.done = true; peer.score = m.score; drawHud(); if (!result) toast(`<b${ar(them().name)}>${esc(them().name)}</b> fell with ${m.score}. Beat it! · تجاوزه!`); else drawResult(); return; }
+    if (m.t === 'result') { result = m.scores; return drawResult(); }
+    if (m.t === 'peerAgain') { peerAgain = true; if (result) drawResult(); return; }
+    if (m.t === 'left') { leftFlag = true; peer.done = true; drawHud(); if (phase === 'race') toast(`<b>${esc(them().name)}</b> left the challenge.`); if (result || phase === 'over') drawResult(); if (phase === 'lobby') lobby(); }
+  }
+  const them = () => players[1 - you] || { name:'Friend', fighter:'ronin' };
+  function go(seed, delay){
+    phase = 'count'; result = null; iAgain = false; peerAgain = false; peer = { score:0, hops:0, done:false }; sent.score = -1; lastCombo = 0;
+    close(); RH.duel(seed);
+    $('menu').hidden = true; $('over').hidden = true;
+    const c = document.createElement('div'); c.className = 'dCount';
+    c.innerHTML = `<div class="vs">${av(players[you].fighter)}<b${ar(players[you].name)}>${esc(players[you].name)}</b><span class="dVsX">VS</span><b${ar(them().name)}>${esc(them().name)}</b>${av(them().fighter,'them')}</div><div class="n"></div>`;
+    document.body.appendChild(c);
+    const n = c.querySelector('.n'), t0 = performance.now(), total = Math.max(1200, delay || 3600);
+    let shown = -1;
+    const tick = () => {
+      const left = total - (performance.now() - t0), k = left > 2700 ? 3 : left > 1800 ? 2 : left > 900 ? 1 : 0;
+      if (k !== shown) { shown = k; n.innerHTML = ENSO + `<span>${k || 'GO'}</span>`; n.classList.remove('pop'); void n.offsetWidth; n.classList.add('pop'); if (k === 0) n.style.color = 'var(--gold)'; }
+      if (left > 0) requestAnimationFrame(tick); else { c.remove(); startRace(); }
+    };
+    tick();
+  }
+  function startRace(){
+    phase = 'race'; RH.start();
+    hud = hud || document.createElement('div'); hud.className = 'dHud'; document.body.appendChild(hud); drawHud();
+    clearInterval(poll); poll = setInterval(watch, 150);
+  }
+  function drawHud(){
+    if (!hud || phase === 'off') return;
+    const ms = RH.score, me = players[you] || {}, t = them(), lead = ms > peer.score ? 0 : peer.score > ms ? 1 : -1;
+    hud.innerHTML = `<div class="dPill ${lead === 0 ? 'lead' : ''} ${phase !== 'race' ? 'out' : ''}">${av(me.fighter)}<div><b>${ms}</b><span>You · أنت</span></div></div>
+      <span class="live">LIVE</span>
+      <div class="dPill them ${lead === 1 ? 'lead' : ''} ${peer.done ? 'out' : ''}">${av(t.fighter,'them')}<div><b>${peer.score}</b><span${ar(t.name)}>${peer.done ? (leftFlag ? 'Left' : 'Fell · سقط') : esc(t.name)}</span></div></div>`;
+  }
+  function toast(html){
+    const d = document.createElement('div'); d.className = 'dToast'; d.innerHTML = av(them().fighter, 'them') + `<span>${html}</span>`;
+    document.body.appendChild(d); setTimeout(() => d.remove(), 2500);
+  }
+  function watch(){
+    if (phase !== 'race') return;
+    const st = RH.state, sc = RH.score, cb = RH.combo;
+    if (sc !== sent.score && ws && ws.readyState === 1) { ws.send(JSON.stringify({ t:'live', score:sc, hops:RH.hops, combo:cb, city:RH.city, perfect: cb > lastCombo })); sent.score = sc; drawHud(); }
+    lastCombo = cb;
+    if (st === 'over') { phase = 'over'; clearInterval(poll); if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t:'over', score:sc, hops:RH.hops })); drawHud(); drawResult(); }
+  }
+  function drawResult(){
+    if (phase !== 'over') return;
+    const me = players[you] || {}, t = them(), ms = result ? result[you].score : RH.score, ts = result ? result[1 - you].score : peer.score, waiting = !result && !peer.done && !leftFlag;
+    const win = ms > ts, draw = ms === ts;
+    const title = waiting ? (ms > ts ? 'You lead!' : 'Hold on…') : win || leftFlag && !result ? 'YOU WIN!' : draw ? 'DRAW' : 'SO CLOSE!';
+    const arT = waiting ? 'بانتظار صديقك' : win || leftFlag && !result ? 'فزت! 🏆' : draw ? 'تعادل' : 'قريب جداً!';
+    sheet(`<div class="dRes"><span class="dK">Live challenge · تحدي مباشر</span><h1 class="${waiting || win || draw || leftFlag ? '' : 'lose'}">${title}</h1><div class="dAr">${arT}</div>
+      <div class="dScores"><div class="dP ${ms < ts ? 'low' : ''}">${av(me.fighter)}<strong>${ms}</strong><b${ar(me.name)}>${esc(me.name)}</b></div><span class="dVsX">VS</span>
+        <div class="dP ${ts < ms && !waiting ? 'low' : ''}">${av(t.fighter,'them')}<strong>${ts}</strong><b${ar(t.name)}>${esc(t.name)}</b>${waiting ? '<span class="dLive">● still playing · يلعب الآن</span>' : leftFlag ? '<small>left · غادر</small>' : ''}</div></div>
+      ${waiting ? '<div class="dDots"><i></i><i></i><i></i></div>' : leftFlag ? '' : `<button class="dGo" id="dAgain" type="button" ${iAgain ? 'disabled' : ''}>${SV.swords} ${iAgain ? 'Waiting for rematch…' : peerAgain ? 'Accept rematch' : 'Rematch'} <small lang="ar">· ${iAgain ? 'بانتظار صديقك' : 'إعادة'}</small></button>`}
+      ${peerAgain && !iAgain ? `<div class="dNote" style="color:#FFB3A6">${esc(t.name)} wants a rematch! · يريد إعادة</div>` : ''}
+      ${waiting ? '' : `<button class="dG2" id="dBrag" type="button">${SV.wa} Share the result · شارك النتيجة</button>`}
+      <button class="dG2" id="dLeave" type="button" style="box-shadow:none;background:none;color:var(--mute);margin-top:4px">Leave · خروج</button></div>`, false);
+    const a = $('dAgain'); if (a) a.onclick = () => { iAgain = true; ws && ws.readyState === 1 && ws.send(JSON.stringify({ t:'again' })); drawResult(); };
+    const b = $('dBrag'); if (b) b.onclick = () => window.open('https://wa.me/?text=' + encodeURIComponent(`⚔️ Ronin Hop live challenge: ${me.name} ${ms} – ${ts} ${t.name}\n${SITE}?src=duel`), '_blank');
+    $('dLeave').onclick = () => leave();
+  }
+  function leave(){
+    const wasRace = phase === 'over' || phase === 'race';
+    phase = 'off'; clearInterval(poll); close(); if (hud) { hud.remove(); hud = null; }
+    if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+    RH.solo(); room = null; players = []; result = null;
+    if (wasRace && RH.state === 'over') $('over').hidden = false;
+  }
+  // joining from an invite link
+  const q = new URLSearchParams(location.search).get('duel');
+  if (q) setTimeout(() => openHome('', q.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4)), 600);
 })();
 </script>
 </body>
