@@ -619,6 +619,7 @@ function strut(g, a, b, th, col){
 }
 
 /* ---------- block models: each returns landing info ---------- */
+const NO_ADS = !!window.RH_NO_ADS;          // the friends version shows no sponsor signs or brand buildings
 /* ---------- sponsors: edit this list to change every sign in the game ---------- */
 // Every board uses one layout: a round emblem on top, the name in one line under it, on the same light board.
 const SPONSORS = [
@@ -644,7 +645,7 @@ const FREE = [
   { name:'انشر إعلانك هنا', free:true, ar:true, c1:'#FFFFFF', c2:'#A3A9B2', mono:'إعلان', dashed:true },
 ];
 FREE.forEach(q => { q.bg = '#F1F2F4'; q.fg = '#7C828C'; });
-const FREE_RATE = .09;                     // share of towers that show a free-slot invitation
+const FREE_RATE = NO_ADS ? 0 : .09;                     // share of towers that show a free-slot invitation
 let freeTurn = (Math.random()*2)|0;
 const IMG = {};                            // logo images, loaded before the first sign is drawn
 const LOGOS = { murei:'logos/murei.jpg', motorteile:'logos/motorteile.png', icons:'logos/icons.png', mword:'logos/motor-word.png', mmark:'logos/motor-mark.png',
@@ -1316,7 +1317,7 @@ const thud = () => { blip(150,.12,'sine',.25,0,70); whoosh(.08,900,300,.12); };
 /* ---------- world ---------- */
 function dispose(o){ o.traverse(c => { if (c.geometry) c.geometry.dispose(); }); scene.remove(o); }
 /* ---------- custom brand buildings: the whole block is designed for one sponsor ---------- */
-const BRAND_RATE = .14;                    // share of blocks that are a custom brand building; landing on one pays a bonus
+const BRAND_RATE = NO_ADS ? 0 : .14;                    // share of blocks that are a custom brand building; landing on one pays a bonus
 const BR = { ink:'#17191E', ink2:'#0C0D10', gold:'#C9A24B', gold2:'#E9CB7A', ivory:'#F3EEE4', steel:'#C9CDD3', glass:'#9CC4CE' };
 const brandMats = new Map();
 function brandTex(key, W, H, draw){
@@ -1810,7 +1811,7 @@ function spawnNext0(){
   if (isSummit(i)) kind = 'summit';
   else if (i % HOPS === 0) kind = city.first;
   else if (i > 2 && !cur.board && Math.random() < BRAND_RATE) kind = BRANDS[brandTurn++ % BRANDS.length];
-  else { do { kind = pick(city.kinds); } while (kind === cur.kind || (MOVERS.includes(kind) && i%HOPS<2) || (kind==='billboard' && (cur.board || Math.random() < .55))); }
+  else { do { kind = pick(city.kinds); } while (kind === cur.kind || (MOVERS.includes(kind) && i%HOPS<2) || (kind==='billboard' && (NO_ADS || cur.board || Math.random() < .55))); }
   let alongX = Math.random() < .5;
   if (dirBal >= 2) alongX = false; else if (dirBal <= -2) alongX = true;
   dirBal += alongX ? 1 : -1;
