@@ -3,7 +3,7 @@ services:
   - type: web
     name: ronin-hop-contest-api
     runtime: node
-    plan: free
+    plan: starter
     region: frankfurt
     rootDir: server
     buildCommand: npm install
