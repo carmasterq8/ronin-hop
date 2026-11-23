@@ -2630,7 +2630,17 @@ const COUNT = (() => {
   const call = (op, k) => fetch(API + op + '/' + NS + '/' + k).then(r => r.ok ? r.json() : null).then(j => j ? j.value : null).catch(() => null);
   return {
     device(){ if (!live) return; try { if (localStorage.getItem('ronin.counted')) return; } catch (e) { return; }
-      call('hit','devices').then(v => { if (v != null) try { localStorage.setItem('ronin.counted','1'); } catch (e) {} }); },
+      call('hit','devices').then(v => { if (v != null) try { localStorage.setItem('ronin.counted','1'); } catch (e) {} });
+      // where this new player came from: tagged link (?src=), in-app browser, or referring site
+      const q = new URLSearchParams(location.search), tag = (q.get('src') || q.get('utm_source') || '').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,16);
+      const ua = navigator.userAgent, ref = (document.referrer || '').toLowerCase();
+      const src = tag ? tag
+        : /Instagram/i.test(ua) ? 'instagram' : /FBAN|FBAV|FB_IAB|FB_IOS/i.test(ua) ? 'facebook' : /TikTok|musical_ly|Bytedance|trill/i.test(ua) ? 'tiktok'
+        : /Snapchat/i.test(ua) ? 'snapchat' : /WhatsApp/i.test(ua) ? 'whatsapp' : /Twitter/i.test(ua) ? 'x'
+        : /youtube|youtu\.be/.test(ref) ? 'youtube' : /instagram/.test(ref) ? 'instagram' : /facebook|fb\.com/.test(ref) ? 'facebook' : /tiktok/.test(ref) ? 'tiktok'
+        : /snapchat/.test(ref) ? 'snapchat' : /t\.co|twitter|x\.com/.test(ref) ? 'x' : /google\./.test(ref) ? 'google' : /whatsapp|wa\.me/.test(ref) ? 'whatsapp'
+        : /muriegarage/.test(ref) ? 'website' : ref ? 'other' : 'direct';
+      call('hit','src-' + src); },
     game(){ if (live) call('hit','games'); },
     home(){ if (!live) return; try { if (localStorage.getItem('ronin.homed')) return; localStorage.setItem('ronin.homed','1'); } catch (e) { return; } call('hit','homes'); },
     read(){ return Promise.all([call('get','devices'), call('get','games'), call('get','homes')]); },
